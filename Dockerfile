@@ -1,7 +1,19 @@
-#use node alpine v14.15.1 - I have 14.15.2 on my Ubuntu 18.04LTS
-FROM node:14.15.1-alpine3.10
 
-COPY . /app
+#Golang Image
+FROM golang
 
-RUN npm install -g @angular/cli
 
+ARG key
+ARG secret
+
+ENV KEY=$key
+ENV SECRET=$secret
+
+WORKDIR /app
+
+COPY ./backend /app
+
+RUN go run *.go
+
+# RUN go get -u github.com/golang/protobuf/protoc-gen-go
+# RUN go get -u google.golang.org/grpc
