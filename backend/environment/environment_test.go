@@ -14,9 +14,9 @@ func TestGetCredentialsKey(t *testing.T) {
 	key := env.Key
 
 	if len(key) == 0 {
-		t.Errorf("GetCredentials FAILED for KEY variable, expected %v but got %v", os.Getenv("KEY"), key)
-	} else if key != os.Getenv("KEY") {
-		t.Errorf("GetCredentials FAILED for KEY variable, expected %v but got %v", os.Getenv("KEY"), key)
+		t.Errorf("GetCredentials FAILED for KEY variable, expected %v but got %v", os.Getenv("SARA_KEY"), key)
+	} else if key != os.Getenv("SARA_KEY") {
+		t.Errorf("GetCredentials FAILED for KEY variable, expected %v but got %v", os.Getenv("SARA_KEY"), key)
 	} else {
 		t.Log("GetCredentials PASSED for KEY variable")
 	}
@@ -29,9 +29,9 @@ func TestGetCredentialsSecret(t *testing.T) {
 	secret := env.Secret
 
 	if len(secret) == 0 {
-		t.Errorf("GetCredentials FAILED for SECRET variable, expected %v but got %v", os.Getenv("SECRET"), secret)
-	} else if secret != os.Getenv("SECRET") {
-		t.Errorf("GetCredentials FAILED for SECRET variable, expected %v but got %v", os.Getenv("SECRET"), secret)
+		t.Errorf("GetCredentials FAILED for SECRET variable, expected %v but got %v", os.Getenv("SARA_SECRET"), secret)
+	} else if secret != os.Getenv("SARA_SECRET") {
+		t.Errorf("GetCredentials FAILED for SECRET variable, expected %v but got %v", os.Getenv("SARA_SECRET"), secret)
 	} else {
 		t.Log("GetCredentials PASSED for SECRET variable")
 	}

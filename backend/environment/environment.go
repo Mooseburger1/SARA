@@ -12,7 +12,7 @@ type Environment struct {
 
 // GetCredentials gets AWS variables from environment
 func (e *Environment) GetCredentials() *Environment {
-	e.Key = os.Getenv("KEY")
-	e.Secret = os.Getenv("SECRET")
+	e.Key = os.Getenv("SARA_KEY")
+	e.Secret = os.Getenv("SARA_SECRET")
 	return e
 }
