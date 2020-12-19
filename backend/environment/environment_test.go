@@ -8,7 +8,7 @@ import (
 )
 
 func TestGetCredentialsKey(t *testing.T) {
-	env := environment.Environment{}
+	var env environment.Environment
 	env.GetCredentials()
 
 	key := env.Key
