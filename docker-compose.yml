@@ -3,11 +3,11 @@ services:
     go-backend:
         image: 'go_backend'
         container_name: 'go_backend'
+        environment:
+            - SARA_KEY
+            - SARA_SECRET
+        stdin_open: true
+        tty: true
         build:
             context: .
             dockerfile: Dockerfile.dev
-            args:
-                key: $SARA_KEY
-                secret: $SARA_SECRET
-        
-           

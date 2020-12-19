@@ -3,12 +3,6 @@
 FROM golang
 
 
-ARG key
-ARG secret
-
-ENV KEY=$key
-ENV SECRET=$secret
-
 WORKDIR /app
 
 COPY ./backend /app
@@ -17,6 +11,7 @@ RUN ls
 
 RUN go get -u github.com/rakyll/gotest
 
+
 CMD ["gotest", "./...", "-v", "-cover"]
 # RUN go get -u github.com/golang/protobuf/protoc-gen-go
-# RUN go get -u google.golang.org/grpc
+# RUN go get -u google.golang.org/grpc`
