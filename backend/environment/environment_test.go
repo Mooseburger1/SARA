@@ -36,3 +36,33 @@ func TestGetCredentialsSecret(t *testing.T) {
 		t.Log("GetCredentials PASSED for SECRET variable")
 	}
 }
+
+func TestGetCredentialsRegion(t *testing.T) {
+	env := environment.Environment{}
+	env.GetCredentials()
+
+	region := env.Region
+
+	if len(region) == 0 {
+		t.Errorf("GetCredentials FAILED for REGION variable, expected %v but got %v", os.Getenv("SARA_REGION"), region)
+	} else if region != os.Getenv("SARA_REGION") {
+		t.Errorf("GetCredentials FAILED for REGION variable, expected %v but got %v", os.Getenv("SARA_REGION"), region)
+	} else {
+		t.Log("GetCredentials PASSED for REGION variable")
+	}
+}
+
+func TestGetCredentialsBucket(t *testing.T) {
+	env := environment.Environment{}
+	env.GetCredentials()
+
+	bucket := env.Bucket
+
+	if len(bucket) == 0 {
+		t.Errorf("GetCredentials FAILED for BUCKET variable, expected %v but got %v", os.Getenv("SARA_BUCKET"), bucket)
+	} else if bucket != os.Getenv("SARA_BUCKET") {
+		t.Errorf("GetCredentials FAILED for BUCKET variable, expected %v but got %v", os.Getenv("SARA_BUCKET"), bucket)
+	} else {
+		t.Log("GetCredentials PASSED for BUCKET variable")
+	}
+}

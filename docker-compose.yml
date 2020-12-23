@@ -6,6 +6,8 @@ services:
         environment:
             - SARA_KEY
             - SARA_SECRET
+            - SARA_REGION
+            - SARA_BUCKET
         stdin_open: true
         tty: true
         build:

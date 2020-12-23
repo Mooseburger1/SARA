@@ -7,9 +7,9 @@ WORKDIR /app
 
 COPY ./backend /app
 
-RUN ls
 
 RUN go get -u github.com/rakyll/gotest
+RUN go get -u github.com/aws/aws-sdk-go/service/s3
 
 
 CMD ["gotest", "./...", "-v", "-cover"]
