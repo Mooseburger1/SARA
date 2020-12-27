@@ -26,7 +26,7 @@ func TestListPictures(t *testing.T) {
 
 	s.CreateSession()
 
-	outgoing := make(chan string)
+	outgoing := make(chan *string)
 	go s.ListPictures(outgoing)
 
 	for _ = range outgoing {
@@ -38,4 +38,39 @@ func TestListPictures(t *testing.T) {
 	} else {
 		t.Log("ListPictures PASSED for S3 object")
 	}
+}
+
+func TestBucketLink(t *testing.T) {
+	s := s3.S3{}
+
+	s.CreateSession()
+
+	real := "https://sims-family-photos.s3-us-west-2.amazonaws.com/"
+
+	if s.BucketLink != real {
+		t.Errorf(fmt.Sprintf("Creating BucketLink FAILED. Expected %s but received %s", real, s.BucketLink))
+	} else {
+		t.Log("BucketLink PASSED. URLs match")
+	}
+}
+
+func TestGenerateObjectURL(t *testing.T) {
+
+	s := s3.S3{}
+	s.CreateSession()
+
+	bucketObjectChannel := make(chan *string)
+	objectURLChannel := make(chan []string)
+
+	go s.ListPictures(bucketObjectChannel)
+	go s.GenerateObjectURL(bucketObjectChannel, objectURLChannel)
+
+	results := <-objectURLChannel
+
+	if len(results) <= 0 {
+		t.Errorf("Returned no URL links for images. Please check credentials and ensure images exists in your S3 bucket")
+	} else {
+		t.Log("GenerateObjectURL PASSED. Recieved URLs from channel")
+	}
+
 }

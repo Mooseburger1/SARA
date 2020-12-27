@@ -11,15 +11,18 @@ func main() {
 	var e environment.Environment
 	e.GetCredentials()
 
-	fmt.Println(fmt.Sprintf("Key: %v | Secret: %v | Region %v | Bucket %v", e.Key, e.Secret, e.Region, e.Bucket))
 	s := s3.S3{}
 	s.CreateSession()
 
-	outgoing := make(chan string)
-	go s.ListPictures(outgoing)
+	bucketObjectChannel := make(chan *string)
+	objectURLChannel := make(chan []string)
 
-	for val := range outgoing {
-		fmt.Println(val)
-	}
+	go s.ListPictures(bucketObjectChannel)
+	go s.GenerateObjectURL(bucketObjectChannel, objectURLChannel)
 
+	var results []string
+
+	results = <-objectURLChannel
+
+	fmt.Println(results)
 }

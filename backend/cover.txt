@@ -1,0 +1,27 @@
+mode: set
+github.com/Mooseburger1/SARA/backend/environment/environment.go:16.53,23.2 5 1
+github.com/Mooseburger1/SARA/backend/s3/S3.go:26.30,35.19 7 1
+github.com/Mooseburger1/SARA/backend/s3/S3.go:50.2,60.16 4 1
+github.com/Mooseburger1/SARA/backend/s3/S3.go:64.2,66.14 2 1
+github.com/Mooseburger1/SARA/backend/s3/S3.go:35.19,36.78 1 0
+github.com/Mooseburger1/SARA/backend/s3/S3.go:37.8,37.29 1 1
+github.com/Mooseburger1/SARA/backend/s3/S3.go:37.29,38.81 1 0
+github.com/Mooseburger1/SARA/backend/s3/S3.go:39.8,39.29 1 1
+github.com/Mooseburger1/SARA/backend/s3/S3.go:39.29,40.81 1 0
+github.com/Mooseburger1/SARA/backend/s3/S3.go:41.8,41.29 1 1
+github.com/Mooseburger1/SARA/backend/s3/S3.go:41.29,42.81 1 0
+github.com/Mooseburger1/SARA/backend/s3/S3.go:43.8,48.3 4 1
+github.com/Mooseburger1/SARA/backend/s3/S3.go:60.16,61.66 1 0
+github.com/Mooseburger1/SARA/backend/s3/S3.go:71.63,80.16 5 1
+github.com/Mooseburger1/SARA/backend/s3/S3.go:94.2,94.39 1 1
+github.com/Mooseburger1/SARA/backend/s3/S3.go:80.16,81.41 1 0
+github.com/Mooseburger1/SARA/backend/s3/S3.go:91.3,91.9 1 0
+github.com/Mooseburger1/SARA/backend/s3/S3.go:81.41,82.23 1 0
+github.com/Mooseburger1/SARA/backend/s3/S3.go:83.32,84.54 1 0
+github.com/Mooseburger1/SARA/backend/s3/S3.go:85.12,86.30 1 0
+github.com/Mooseburger1/SARA/backend/s3/S3.go:88.9,90.4 1 0
+github.com/Mooseburger1/SARA/backend/s3/S3.go:94.39,98.16 3 1
+github.com/Mooseburger1/SARA/backend/s3/S3.go:98.16,100.4 1 1
+github.com/Mooseburger1/SARA/backend/s3/S3.go:106.102,111.42 3 1
+github.com/Mooseburger1/SARA/backend/s3/S3.go:118.2,118.26 1 1
+github.com/Mooseburger1/SARA/backend/s3/S3.go:111.42,116.3 2 1

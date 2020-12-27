@@ -16,8 +16,9 @@ type S3 struct {
 	ListOfPics *s3.ListBucketsOutput
 	key        string
 	secret     string
-	region     string
-	bucket     string
+	Region     string
+	Bucket     string
+	BucketLink string
 	Sess       *s3.S3
 }
 
@@ -42,13 +43,16 @@ func (s *S3) CreateSession() {
 	} else {
 		s.key = key
 		s.secret = secret
-		s.region = region
-		s.bucket = bucket
+		s.Region = region
+		s.Bucket = bucket
 	}
+
+	url := "https://%s.s3-%s.amazonaws.com/"
+	s.BucketLink = fmt.Sprintf(url, s.Bucket, s.Region)
 
 	sess, err := session.NewSession(
 		&aws.Config{
-			Region:      aws.String(s.region),
+			Region:      aws.String(s.Region),
 			Credentials: credentials.NewStaticCredentials(s.key, s.secret, ""),
 		},
 	)
@@ -64,13 +68,12 @@ func (s *S3) CreateSession() {
 }
 
 //ListPictures show all objects in the SARA bucket
-func (s *S3) ListPictures(outgoing chan<- string) {
-	defer close(outgoing)
+func (s *S3) ListPictures(bucketObjectChannel chan<- *string) {
+	defer close(bucketObjectChannel)
 	sess := s.Sess
 
 	input := &s3.ListObjectsV2Input{
-		Bucket:  aws.String(s.bucket),
-		MaxKeys: aws.Int64(25),
+		Bucket: aws.String(s.Bucket),
 	}
 
 	result, err := sess.ListObjectsV2(input)
@@ -93,9 +96,25 @@ func (s *S3) ListPictures(outgoing chan<- string) {
 		key := item.Key
 
 		if *size > 0 {
-			outgoing <- *key
+			bucketObjectChannel <- key
 		}
 
 	}
 
+}
+
+//GenerateObjectURL creates the http link for images in S3
+func (s *S3) GenerateObjectURL(bucketObjectChannel <-chan *string, objectURLChannel chan<- []string) {
+	defer close(objectURLChannel)
+
+	var imgs []string
+
+	for object := range bucketObjectChannel {
+		url := s.BucketLink + *object
+
+		imgs = append(imgs, url)
+
+	}
+
+	objectURLChannel <- imgs
 }
