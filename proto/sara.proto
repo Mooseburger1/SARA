@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package server;
+
+option go_package = "backend/server";
+
+
+message pictureLinksRequest{
+    int32 page_number = 1;
+}
+
+message pictureLinksResponse{
+    repeated string urls = 1;
+}
+
+service pictureLinksService{
+    rpc pictureLinks(pictureLinksRequest) returns (pictureLinksResponse) {};
+}

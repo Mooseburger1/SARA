@@ -8,6 +8,7 @@ services:
             - SARA_SECRET
             - SARA_REGION
             - SARA_BUCKET
+            - SARAPATH
         stdin_open: true
         tty: true
         build:

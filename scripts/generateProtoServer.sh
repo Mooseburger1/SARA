@@ -1,0 +1,1 @@
+protoc --go_out=plugins=grpc:$SARAPATH --proto_path=$SARAPATH $SARAPATH/proto/sara.proto

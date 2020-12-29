@@ -14,4 +14,15 @@ RUN go get -u github.com/aws/aws-sdk-go/service/s3
 
 CMD ["gotest", "./...", "-v", "-cover"]
 # RUN go get -u github.com/golang/protobuf/protoc-gen-go
-# RUN go get -u google.golang.org/grpc`
+# RUN go get -u google.golang.org/grpc
+
+
+
+
+
+
+
+#Node image
+RUN npm install ts-protoc-gen
+RUN npm install @improbable-eng/grpc-web
+RUN npm install @types/google-protobuf google-protobuf grpc-web-client protoc ts-protoc-gen --save

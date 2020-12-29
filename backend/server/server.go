@@ -1,16 +1,15 @@
-package main
+package server
 
 import (
-	"fmt"
+	"context"
 
-	"github.com/Mooseburger1/SARA/backend/environment"
 	"github.com/Mooseburger1/SARA/backend/s3"
 )
 
-func main() {
-	var e environment.Environment
-	e.GetCredentials()
+type Server struct {
+}
 
+func (*Server) PictureLinks(ctx context.Context, request *PictureLinksRequest) (*PictureLinksResponse, error) {
 	s := s3.S3{}
 	s.CreateSession()
 
@@ -24,5 +23,10 @@ func main() {
 
 	results = <-objectURLChannel
 
-	fmt.Println(results)
+	response := &PictureLinksResponse{
+		Urls: results,
+	}
+
+	return response, nil
+
 }
