@@ -18,20 +18,20 @@ func main() {
 	logger := log.New(os.Stdout, "rest-server", log.LstdFlags)
 
 	/////// Initialize handlers here ///////
-	hh := handlers.NewHelloStruct(logger)
+	oauth2 := handlers.NewOauth2(logger)
 
 	//Serve Mux to replace the default ServeMux
 	serveMux := mux.NewRouter()
 
 	//Create filtered Routers to handle specific verbs
 	getRouter := serveMux.Methods(http.MethodGet).Subrouter()
-	getRouter.HandleFunc("/", hh.ServeHTTP)
+	getRouter.HandleFunc("/", oauth2.Authenticate)
 
 	putRouter := serveMux.Methods(http.MethodPut).Subrouter()
-	putRouter.HandleFunc("/", hh.ServeHTTP)
+	putRouter.HandleFunc("/", oauth2.Authenticate)
 
 	postRouter := serveMux.Methods(http.MethodPost).Subrouter()
-	postRouter.HandleFunc("/", hh.ServeHTTP)
+	postRouter.HandleFunc("/", oauth2.Authenticate)
 
 	// Configure the server {TODO: move these to an external configurable file/location}
 	server := &http.Server{
