@@ -26,6 +26,7 @@ func main() {
 	//Create filtered Routers to handle specific verbs
 	getRouter := serveMux.Methods(http.MethodGet).Subrouter()
 	getRouter.HandleFunc("/", oauth2.Authenticate)
+	getRouter.HandleFunc("/callback-oauth", oauth2.RedirectCallback)
 
 	putRouter := serveMux.Methods(http.MethodPut).Subrouter()
 	putRouter.HandleFunc("/", oauth2.Authenticate)
