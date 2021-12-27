@@ -3,18 +3,20 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	"log"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+	"gopkg.in/boj/redistore.v1"
 )
 
 type Oauth2 struct {
 	logger *log.Logger
 	conf   *oauth2.Config
+	Client *http.Client
+	store  *redistore.RediStore
 }
 
 func NewOauth2(logger *log.Logger) *Oauth2 {
@@ -62,31 +64,29 @@ func (oauth *Oauth2) RedirectCallback(rw http.ResponseWriter, r *http.Request) {
 			oauth.logger.Fatalf("Oauth Exchange Failed with %v", err)
 		}
 
-		oauth.logger.Printf("TOKEN>> AccessToken>> %v\n", token.AccessToken)
-		oauth.logger.Printf("TOKEN>> Expiration Time>> %v\n", token.Expiry.String())
-		oauth.logger.Printf("TOKEN>> RefreshToken>> %v\n", token.RefreshToken)
-
 		client := oauth.conf.Client(ctx, token)
-		resp, err := client.Get("https://photoslibrary.googleapis.com/v1/albums")
+		oauth.Client = client
 
-		if err != nil {
-			oauth.logger.Printf("Get: %v\n", err.Error())
-			http.Redirect(rw, r, "/", http.StatusTemporaryRedirect)
-			return
-		}
-		defer resp.Body.Close()
+		// resp, err := client.Get("https://photoslibrary.googleapis.com/v1/albums")
 
-		response, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			oauth.logger.Printf("ReadAll: %v\n", err.Error())
-			http.Redirect(rw, r, "/", http.StatusTemporaryRedirect)
-			return
-		}
+		// if err != nil {
+		// 	oauth.logger.Printf("Get: %v\n", err.Error())
+		// 	http.Redirect(rw, r, "/", http.StatusTemporaryRedirect)
+		// 	return
+		// }
+		// defer resp.Body.Close()
 
-		oauth.logger.Printf("parseResponseBody: %v\n", string(response))
+		// response, err := ioutil.ReadAll(resp.Body)
+		// if err != nil {
+		// 	oauth.logger.Printf("ReadAll: %v\n", err.Error())
+		// 	http.Redirect(rw, r, "/", http.StatusTemporaryRedirect)
+		// 	return
+		// }
 
-		rw.Write([]byte("Hello, I'm protected\n"))
-		rw.Write([]byte(string(response)))
-		return
+		// oauth.logger.Printf("parseResponseBody: %v\n", string(response))
+
+		// rw.Write([]byte("Hello, I'm protected\n"))
+		// rw.Write([]byte(string(response)))
+		// return
 	}
 }

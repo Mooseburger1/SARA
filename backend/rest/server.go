@@ -17,6 +17,8 @@ func main() {
 	//Main logger
 	logger := log.New(os.Stdout, "rest-server", log.LstdFlags)
 
+	// Initialize redis store
+
 	/////// Initialize handlers here ///////
 	oauth2 := handlers.NewOauth2(logger)
 
