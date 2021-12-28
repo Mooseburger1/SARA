@@ -11,7 +11,7 @@ ENV SECRET=$secret
 
 WORKDIR /app
 
-COPY ./backend/rest /app
+COPY ./rest /app
 
 EXPOSE 9090
 

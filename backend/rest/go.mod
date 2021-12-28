@@ -9,6 +9,6 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/sessions v1.2.1 // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
-	gopkg.in/boj/redistore.v1 v1.0.0-20160128113310-fc113767cd6b // indirect
+	gopkg.in/boj/redistore.v1 v1.0.0-20160128113310-fc113767cd6b
 
 )

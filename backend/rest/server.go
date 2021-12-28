@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -9,8 +10,8 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-
 	"golang.org/x/net/context"
+	"gopkg.in/boj/redistore.v1"
 )
 
 func main() {
@@ -18,9 +19,14 @@ func main() {
 	logger := log.New(os.Stdout, "rest-server", log.LstdFlags)
 
 	// Initialize redis store
+	store, err := redistore.NewRediStore(10, "tcp", "redis-server:6379", "", []byte("secret-key"))
+
+	if err != nil {
+		fmt.Printf("Error processing redistore %v", err)
+	}
 
 	/////// Initialize handlers here ///////
-	oauth2 := handlers.NewOauth2(logger)
+	oauth2 := handlers.NewOauth2(logger, store)
 
 	//Serve Mux to replace the default ServeMux
 	serveMux := mux.NewRouter()
@@ -29,6 +35,7 @@ func main() {
 	getRouter := serveMux.Methods(http.MethodGet).Subrouter()
 	getRouter.HandleFunc("/", oauth2.Authenticate)
 	getRouter.HandleFunc("/callback-oauth", oauth2.RedirectCallback)
+	getRouter.HandleFunc("/list-albums", oauth2.ListAlbums)
 
 	putRouter := serveMux.Methods(http.MethodPut).Subrouter()
 	putRouter.HandleFunc("/", oauth2.Authenticate)
