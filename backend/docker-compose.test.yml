@@ -1,0 +1,12 @@
+version: '3'
+services:
+  go-backend-test:
+        image: 'go_backend_test'
+        container_name: 'go-backend-test'
+        stdin_open: true
+        tty: true
+        ports:
+            - "9090:9090"
+        build:
+            context: .
+            dockerfile: ./Dockerfile.test.dev
