@@ -67,8 +67,8 @@ type googleClient struct {
 
 func ConfigBuilder() *oauth2.Config {
 	conf := &oauth2.Config{
-		ClientID:     "682403741961-hrhr7ip4k16apjgcjonrs2ii8cofsgb6.apps.googleusercontent.com",
-		ClientSecret: "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",
+		ClientID:     "",
+		ClientSecret: "",
 		RedirectURL:  "http://localhost:9090/oauth-callback",
 		Scopes:       []string{"https://www.googleapis.com/auth/photoslibrary.readonly"},
 		Endpoint:     google.Endpoint,
