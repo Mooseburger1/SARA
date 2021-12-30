@@ -1,5 +1,9 @@
 name: Sara Workflow
 
+permissions:
+  checks: write
+  pull-requests: write
+
 
 on:
   push:
@@ -28,9 +32,7 @@ jobs:
         if: always()
         with:
           files: test-results/**/*.xml
-        permissions:
-          checks: write
-          pull-requests: write
+        
 
 
 
