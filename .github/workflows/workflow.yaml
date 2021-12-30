@@ -23,6 +23,11 @@ jobs:
           pwd
           ls SARA
           docker-compose -f SARA/backend/docker-compose.test.yml up --build --exit-code-from go-backend-test
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v1
+        if: always()
+        with:
+          files: test-results/**/*.xml
 
 
 
