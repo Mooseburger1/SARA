@@ -1,3 +1,3 @@
 # SARA
 
-<img src="https://travis-ci.org/Mooseburger1/SARA.svg?branch=main">
+![backend_tests](https://github.com/Mooseburger1/SARA/actions/workflows/workflow.yml/badge.svg)
