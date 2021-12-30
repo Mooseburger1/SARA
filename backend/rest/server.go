@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -15,33 +14,39 @@ import (
 )
 
 func main() {
-	//Main logger
+	// Main logger
 	logger := log.New(os.Stdout, "rest-server", log.LstdFlags)
 
 	// Initialize redis store
 	store, err := redistore.NewRediStore(10, "tcp", "redis-server:6379", "", []byte("secret-key"))
 
 	if err != nil {
-		fmt.Printf("Error processing redistore %v", err)
+		logger.Fatalf("Error processing redistore %v", err)
+		return
 	}
 
 	/////// Initialize handlers here ///////
-	oauth2 := handlers.NewOauth2(logger, store)
+	gClient := handlers.NewGoogleClientBuilder().
+		SetLogger(logger).
+		SetStore(store).
+		SetConfig(handlers.ConfigBuilder()).
+		Build()
 
 	//Serve Mux to replace the default ServeMux
 	serveMux := mux.NewRouter()
 
 	//Create filtered Routers to handle specific verbs
 	getRouter := serveMux.Methods(http.MethodGet).Subrouter()
-	getRouter.HandleFunc("/", oauth2.Authenticate)
-	getRouter.HandleFunc("/callback-oauth", oauth2.RedirectCallback)
-	getRouter.HandleFunc("/list-albums", oauth2.ListAlbums)
+	//getRouter.HandleFunc("/", )
+	getRouter.HandleFunc("/authenticate", gClient.Authenticate)
+	getRouter.HandleFunc("/oauth-callback", gClient.RedirectCallback)
+	getRouter.HandleFunc("/list-albums", gClient.ListAlbums)
 
 	putRouter := serveMux.Methods(http.MethodPut).Subrouter()
-	putRouter.HandleFunc("/", oauth2.Authenticate)
+	putRouter.HandleFunc("/", gClient.Authenticate)
 
 	postRouter := serveMux.Methods(http.MethodPost).Subrouter()
-	postRouter.HandleFunc("/", oauth2.Authenticate)
+	postRouter.HandleFunc("/", gClient.Authenticate)
 
 	// Configure the server {TODO: move these to an external configurable file/location}
 	server := &http.Server{
