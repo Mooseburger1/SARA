@@ -18,10 +18,10 @@ func TestNewGoogleClient(t *testing.T) {
 	mockStore := &redistore.RediStore{}
 
 	actualGC := googleClient{
-		logger: mockLogger,
-		conf:   mockconf,
-		Client: mockClient,
-		store:  mockStore,
+		logger:           mockLogger,
+		conf:             mockconf,
+		authorizedClient: mockClient,
+		store:            mockStore,
 	}
 
 	gc := NewGoogleClientBuilder().

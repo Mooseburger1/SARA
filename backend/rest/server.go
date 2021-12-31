@@ -41,6 +41,8 @@ func main() {
 	getRouter.HandleFunc("/authenticate", gClient.Authenticate)
 	getRouter.HandleFunc("/oauth-callback", gClient.RedirectCallback)
 	getRouter.HandleFunc("/list-albums", gClient.ListAlbums)
+	getRouter.HandleFunc("/list-photos-from-album", gClient.ListPicturesFromAlbum)
+	getRouter.HandleFunc("/oh-no", gClient.OhNo)
 
 	putRouter := serveMux.Methods(http.MethodPut).Subrouter()
 	putRouter.HandleFunc("/", gClient.Authenticate)
