@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"text/template"
+	"time"
 
 	"log"
 
@@ -16,18 +17,16 @@ import (
 )
 
 type googleClientBuilder struct {
-	logger           *log.Logger
-	conf             *oauth2.Config
-	authorizedClient *http.Client
-	store            *redistore.RediStore
+	logger *log.Logger
+	conf   *oauth2.Config
+	store  *redistore.RediStore
 }
 
 func NewGoogleClientBuilder() *googleClientBuilder {
 	return &googleClientBuilder{
-		logger:           nil,
-		conf:             nil,
-		authorizedClient: nil,
-		store:            nil,
+		logger: nil,
+		conf:   nil,
+		store:  nil,
 	}
 }
 
@@ -46,24 +45,17 @@ func (builder *googleClientBuilder) SetConfig(conf *oauth2.Config) *googleClient
 	return builder
 }
 
-func (builder *googleClientBuilder) SetClient(client *http.Client) *googleClientBuilder {
-	builder.authorizedClient = client
-	return builder
-}
-
-func (builder *googleClientBuilder) Build() *googleClient {
-	gc := googleClient{logger: builder.logger,
-		store:            builder.store,
-		conf:             builder.conf,
-		authorizedClient: builder.authorizedClient}
+func (builder *googleClientBuilder) Build() *GoogleClient {
+	gc := GoogleClient{logger: builder.logger,
+		store: builder.store,
+		conf:  builder.conf}
 	return &gc
 }
 
-type googleClient struct {
-	logger           *log.Logger
-	conf             *oauth2.Config
-	authorizedClient *http.Client
-	store            *redistore.RediStore
+type GoogleClient struct {
+	logger *log.Logger
+	conf   *oauth2.Config
+	store  *redistore.RediStore
 }
 
 func ConfigBuilder() *oauth2.Config {
@@ -78,6 +70,10 @@ func ConfigBuilder() *oauth2.Config {
 	return conf
 }
 
+func (gc GoogleClient) GetConfiguration() *oauth2.Config {
+	return gc.conf
+}
+
 // Authenticate routes user through Google's Oauth workflow. If the user has already
 // Authenticated and Authorized the app, they will be redirected
 // TODO IMPORVE THIS WORKFLOW - CHECKING FOR A SESSION IS NOT ENOUGH
@@ -87,7 +83,7 @@ func ConfigBuilder() *oauth2.Config {
 // the token. Maybe experiment with rebuilding the authorizedClient with the persisted
 // code. But I fear this code is no longer valid after expiry time. This should be fine though
 // if expiry time has run out, need to redo the whole Oauth process.
-func (gc *googleClient) Authenticate(rw http.ResponseWriter, r *http.Request) {
+func (gc GoogleClient) Authenticate(rw http.ResponseWriter, r *http.Request) {
 
 	url := gc.conf.AuthCodeURL("state", oauth2.AccessTypeOffline)
 	templ := template.Must(template.New("Oauth_Redirect").Parse(`
@@ -105,7 +101,7 @@ func (gc *googleClient) Authenticate(rw http.ResponseWriter, r *http.Request) {
 // RedirectCallback is the URL registered with Google API dashboard as the callback
 // Handler after a user has performed OAuth. It will save all tokens from the OAuth
 // Process within the session cookie and return to user for future use
-func (gc *googleClient) RedirectCallback(rw http.ResponseWriter, r *http.Request) {
+func (gc GoogleClient) RedirectCallback(rw http.ResponseWriter, r *http.Request) {
 
 	// Extract google code
 	code := r.FormValue("code")
@@ -132,16 +128,12 @@ func (gc *googleClient) RedirectCallback(rw http.ResponseWriter, r *http.Request
 			fmt.Printf("Error getting session: %v\n", err)
 		}
 
-		// create an http.Request client to make Google request using the token
-		client := gc.conf.Client(ctx, token)
-		gc.authorizedClient = client
-
 		// save tokens in session cookie
 		session.Values["access-token"] = token.AccessToken
 		session.Values["token-type"] = token.TokenType
 		session.Values["refresh-token"] = token.RefreshToken
 		session.Values["oauth-code"] = code
-		session.Values["expiry"] = token.Expiry.String()
+		session.Values["expiry"] = token.Expiry.Format(time.RFC3339Nano)
 
 		err = session.Save(r, rw)
 		if err != nil {
@@ -149,29 +141,20 @@ func (gc *googleClient) RedirectCallback(rw http.ResponseWriter, r *http.Request
 		}
 
 		fmt.Print("session and token saved\n")
+
 		return
 	}
 }
 
 // ListAlbums utilizes photoslibrary googleapis to list all albums in the
 // Google photos account.
-func (gc *googleClient) ListAlbums(rw http.ResponseWriter, r *http.Request) {
-
-	// if not http client exists user hasn't performed OAuth yet
-	if !gc.hasBeenAuthorized() {
-		gc.logger.Printf("Oauth has not been performed")
-		http.Redirect(rw, r, "/authenticate", http.StatusTemporaryRedirect)
-		return
-	}
-
-	session, err := gc.store.Get(r, "session-key")
-	gc.logger.Printf("The session is: %v", session)
-
+func (gc GoogleClient) ListAlbums(rw http.ResponseWriter, r *http.Request, client *http.Client) {
+	gc.logger.Printf("\n\nThe Client is: %v\n\n", client)
 	req, err := http.NewRequest("GET", "https://photoslibrary.googleapis.com/v1/albums", nil)
 	req.Header.Set("Accept", "application/json")
 
 	// Use the client to make request ot Google Photos API for list albums
-	resp, err := gc.authorizedClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		gc.logger.Printf("Get: %v\n", err.Error())
 		http.Redirect(rw, r, "/", http.StatusTemporaryRedirect)
@@ -191,14 +174,7 @@ func (gc *googleClient) ListAlbums(rw http.ResponseWriter, r *http.Request) {
 
 }
 
-func (gc *googleClient) ListPicturesFromAlbum(rw http.ResponseWriter, r *http.Request) {
-
-	// if not http client exists user hasn't performed OAuth yet
-	if !gc.hasBeenAuthorized() {
-		gc.logger.Printf("Oauth has not been performed")
-		http.Redirect(rw, r, "/authenticate", http.StatusTemporaryRedirect)
-		return
-	}
+func (gc GoogleClient) ListPicturesFromAlbum(rw http.ResponseWriter, r *http.Request, client *http.Client) {
 
 	body := `{"albumId": "AAmUB7Udp11GyFjuG6dicqcuJoZpESzagCtF8mMbb9ekLoftkrmQ_yT2-wpMM2iUc93PS0VPozGd"}`
 	req, err := http.NewRequest("POST", "https://photoslibrary.googleapis.com/v1/mediaItems:search", strings.NewReader(body))
@@ -209,7 +185,7 @@ func (gc *googleClient) ListPicturesFromAlbum(rw http.ResponseWriter, r *http.Re
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
-	resp, err := gc.authorizedClient.Do(req)
+	resp, err := client.Do(req)
 	fmt.Printf("The response %v", resp)
 	if err != nil {
 		gc.logger.Printf("Get: %v\n", err.Error())
@@ -231,18 +207,11 @@ func (gc *googleClient) ListPicturesFromAlbum(rw http.ResponseWriter, r *http.Re
 }
 
 // OhNo is the default Redirect handler for when a user has done something stupid
-func (gc *googleClient) OhNo(rw http.ResponseWriter, r *http.Request) {
+func (gc GoogleClient) OhNo(rw http.ResponseWriter, r *http.Request) {
 	templ := template.Must(template.New("Oh-No").Parse(`
 	<h1>OH NO</h1>`))
 
 	_ = templ.Execute(rw, nil)
 
 	return
-}
-
-func (gc *googleClient) hasBeenAuthorized() bool {
-	if gc.authorizedClient == nil {
-		return false
-	}
-	return true
 }

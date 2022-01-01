@@ -14,20 +14,17 @@ func TestNewGoogleClient(t *testing.T) {
 
 	mockLogger := log.New(os.Stdout, "test", log.LstdFlags)
 	mockconf := ConfigBuilder()
-	mockClient := &http.Client{}
 	mockStore := &redistore.RediStore{}
 
-	actualGC := googleClient{
-		logger:           mockLogger,
-		conf:             mockconf,
-		authorizedClient: mockClient,
-		store:            mockStore,
+	actualGC := GoogleClient{
+		logger: mockLogger,
+		conf:   mockconf,
+		store:  mockStore,
 	}
 
 	gc := NewGoogleClientBuilder().
 		SetLogger(mockLogger).
 		SetConfig(mockconf).
-		SetClient(mockClient).
 		SetStore(mockStore).
 		Build()
 

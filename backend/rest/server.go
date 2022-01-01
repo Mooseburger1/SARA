@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"rest/handlers"
+	"rest/middleware"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -25,13 +26,15 @@ func main() {
 		return
 	}
 
-	/////// Initialize handlers here ///////
+	/////// Initialize middleware and handlers here ///////
+
 	gClient := handlers.NewGoogleClientBuilder().
 		SetLogger(logger).
 		SetStore(store).
 		SetConfig(handlers.ConfigBuilder()).
 		Build()
 
+	mWare := middleware.NewMiddleWare(logger, store, gClient)
 	//Serve Mux to replace the default ServeMux
 	serveMux := mux.NewRouter()
 
@@ -40,8 +43,8 @@ func main() {
 	//getRouter.HandleFunc("/", )
 	getRouter.HandleFunc("/authenticate", gClient.Authenticate)
 	getRouter.HandleFunc("/oauth-callback", gClient.RedirectCallback)
-	getRouter.HandleFunc("/list-albums", gClient.ListAlbums)
-	getRouter.HandleFunc("/list-photos-from-album", gClient.ListPicturesFromAlbum)
+	getRouter.HandleFunc("/list-albums", mWare.Authorized(gClient.ListAlbums))
+	getRouter.HandleFunc("/list-photos-from-album", mWare.Authorized(gClient.ListPicturesFromAlbum))
 	getRouter.HandleFunc("/oh-no", gClient.OhNo)
 
 	putRouter := serveMux.Methods(http.MethodPut).Subrouter()
