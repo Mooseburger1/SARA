@@ -1,0 +1,32 @@
+name: Sara Workflow
+
+permissions:
+  checks: write
+  pull-requests: write
+
+
+on:
+  push:
+    branches:
+      - develop
+      - feature/*
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: lucasalt/act_base:latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: SARA
+      - name: Run Tests
+        run:  |
+          echo ---Building and starting up Docker---
+          pwd
+          ls SARA
+          docker-compose -f SARA/backend/docker-compose.test.yml up --build --exit-code-from go-backend-test
+
+
+#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

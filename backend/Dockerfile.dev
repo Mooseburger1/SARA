@@ -1,0 +1,23 @@
+
+#Golang Image
+FROM golang:latest
+
+
+ARG key
+ARG secret
+
+ENV KEY=$key
+ENV SECRET=$secret
+
+WORKDIR /app
+
+COPY ./rest /app
+
+EXPOSE 9090
+
+CMD ["go","run", "server.go"]
+
+
+
+# RUN go get -u github.com/golang/protobuf/protoc-gen-go
+# RUN go get -u google.golang.org/grpc

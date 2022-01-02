@@ -1,0 +1,16 @@
+version: '3'
+services:
+  redis-server:
+    image: 'redis'
+    stdin_open: true
+    tty: true
+  go-backend:
+        image: 'go_backend'
+        container_name: 'go_backend'
+        stdin_open: true
+        tty: true
+        ports:
+            - "9090:9090"
+        build:
+            context: .
+            dockerfile: ./Dockerfile.dev

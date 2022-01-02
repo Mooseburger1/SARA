@@ -1,3 +1,3 @@
 # SARA
 
-<img src="https://travis-ci.org/Mooseburger1/SARA.svg?branch=main">
+[![Sara Workflow](https://github.com/Mooseburger1/SARA/actions/workflows/workflow.yaml/badge.svg)](https://github.com/Mooseburger1/SARA/actions/workflows/workflow.yaml)

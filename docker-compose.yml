@@ -3,11 +3,23 @@ services:
     go-backend:
         image: 'go_backend'
         container_name: 'go_backend'
+        stdin_open: true
+        tty: true
+        ports:
+            - "9090:9090"
         build:
             context: .
-            dockerfile: Dockerfile.dev
+            dockerfile: backend/Dockerfile.dev
             args:
                 key: $SARA_KEY
                 secret: $SARA_SECRET
+
+    angular-frontend:
+        image: "node:latest"
+        container_name: 'node_frontend'
+        stdin_open: true
+        tty: true
+        ports:
+            - "80:80"
         
            
