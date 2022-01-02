@@ -27,12 +27,7 @@ func main() {
 	}
 
 	/////// Initialize middleware and handlers here ///////
-
-	gClient := handlers.NewGoogleClientBuilder().
-		SetLogger(logger).
-		SetStore(store).
-		SetConfig(handlers.ConfigBuilder()).
-		Build()
+	gClient := handlers.NewGoogleClient(logger)
 
 	mWare := middleware.NewMiddleWare(logger, store, gClient)
 	//Serve Mux to replace the default ServeMux
@@ -41,17 +36,17 @@ func main() {
 	//Create filtered Routers to handle specific verbs
 	getRouter := serveMux.Methods(http.MethodGet).Subrouter()
 	//getRouter.HandleFunc("/", )
-	getRouter.HandleFunc("/authenticate", gClient.Authenticate)
-	getRouter.HandleFunc("/oauth-callback", gClient.RedirectCallback)
+	getRouter.HandleFunc("/authenticate", mWare.Authenticate)
+	getRouter.HandleFunc("/oauth-callback", mWare.RedirectCallback)
 	getRouter.HandleFunc("/list-albums", mWare.Authorized(gClient.ListAlbums))
-	getRouter.HandleFunc("/list-photos-from-album", mWare.Authorized(gClient.ListPicturesFromAlbum))
+	getRouter.HandleFunc("/list-photos-from-album/{albumId:[-_0-9A-Za-z]+}", mWare.Authorized(gClient.ListPicturesFromAlbum))
 	getRouter.HandleFunc("/oh-no", gClient.OhNo)
 
 	putRouter := serveMux.Methods(http.MethodPut).Subrouter()
-	putRouter.HandleFunc("/", gClient.Authenticate)
+	putRouter.HandleFunc("/", mWare.Authenticate)
 
 	postRouter := serveMux.Methods(http.MethodPost).Subrouter()
-	postRouter.HandleFunc("/", gClient.Authenticate)
+	postRouter.HandleFunc("/", mWare.Authenticate)
 
 	// Configure the server {TODO: move these to an external configurable file/location}
 	server := &http.Server{
