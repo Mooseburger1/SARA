@@ -29,7 +29,7 @@ func main() {
 	/////// Initialize middleware and handlers here ///////
 	gClient := handlers.NewGoogleClient(logger)
 
-	mWare := middleware.NewMiddleWare(logger, store, gClient)
+	mWare := middleware.NewMiddleWare(logger, store)
 	//Serve Mux to replace the default ServeMux
 	serveMux := mux.NewRouter()
 
