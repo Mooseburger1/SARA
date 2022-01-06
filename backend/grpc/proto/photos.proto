@@ -5,7 +5,7 @@ import "client.proto";
 option go_package = "grpc/proto/api/photos";
 
 service GooglePhotoService {
-    rpc ListAlbums(AlbumListRequest) returns (AlbumInfo);
+    rpc ListAlbums(AlbumListRequest) returns (AlbumsInfo);
     rpc ListPhotosFromAlbum(FromAlbumInfo) returns (PhotosInfo); 
 }
 
