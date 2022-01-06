@@ -9,7 +9,7 @@ on:
   push:
     branches:
       - develop
-      - feature/*
+      # - feature/*
 
 
 jobs:
