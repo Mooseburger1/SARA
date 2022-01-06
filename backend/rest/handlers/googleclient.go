@@ -10,7 +10,7 @@ import (
 
 	"log"
 
-	"rest/datamodels"
+	"backend/rest/datamodels"
 
 	"github.com/gorilla/mux"
 )

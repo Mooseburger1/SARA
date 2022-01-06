@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"rest/handlers"
-	"rest/middleware"
+	"backend/rest/handlers"
+	"backend/rest/middleware"
 	"time"
 
 	"github.com/gorilla/mux"
