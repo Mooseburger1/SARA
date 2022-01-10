@@ -2,13 +2,12 @@ package main
 
 import (
 	protoPhotos "backend/grpc/proto/api/photos"
-	rpc "backend/grpc/rpc_servers"
+	rpc "backend/grpc/services"
 	"log"
 	"net"
 	"os"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
 )
 
 func main() {
@@ -20,8 +19,8 @@ func main() {
 
 	protoPhotos.RegisterGooglePhotoServiceServer(grpcServer, photoServer)
 
-	reflection.Register(grpcServer)
-	l, err := net.Listen("tcp", ":9092")
+	//reflection.Register(grpcServer)
+	l, err := net.Listen("tcp", ":9091")
 	if err != nil {
 		logger.Fatal(err)
 		os.Exit(1)

@@ -4,13 +4,25 @@ services:
     image: 'redis'
     stdin_open: true
     tty: true
-  go-backend:
-        image: 'go_backend'
-        container_name: 'go_backend'
-        stdin_open: true
-        tty: true
-        ports:
-            - "9090:9090"
-        build:
-            context: .
-            dockerfile: ./Dockerfile.dev
+  rest-backend:
+    image: 'rest_backend'
+    container_name: 'rest_backend'
+    depends_on:
+      - redis-server
+    stdin_open: true
+    tty: true
+    ports:
+        - "9090:9090"
+    build:
+        context: .
+        dockerfile: ./Dockerfile.rest
+  grpc-backend:
+    image: 'grpc_backend'
+    container_name: 'grpc_backend'
+    stdin_open: true
+    tty: true
+    ports:
+        - "9091:9091"
+    build:
+        context: .
+        dockerfile: ./Dockerfile.grpc

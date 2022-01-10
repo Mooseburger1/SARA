@@ -1,12 +1,12 @@
 package main
 
 import (
+	"backend/rest/handlers"
+	"backend/rest/middleware"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	"backend/rest/handlers"
-	"backend/rest/middleware"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -38,8 +38,17 @@ func main() {
 	//getRouter.HandleFunc("/", )
 	getRouter.HandleFunc("/authenticate", mWare.Authenticate)
 	getRouter.HandleFunc("/oauth-callback", mWare.RedirectCallback)
+
 	getRouter.HandleFunc("/list-albums", mWare.Authorized(gClient.ListAlbums))
+	getRouter.HandleFunc("/list-albums/{pageSize:[0-9]+}", mWare.Authorized(gClient.ListAlbums))
+	getRouter.HandleFunc("/list-albums/{pageToken:[-_+0-9A-Za-z]+}", mWare.Authorized(gClient.ListAlbums))
+	getRouter.HandleFunc("/list-albums/{pageSize:[0-9]+}/{pageToken:[-_+0-9A-Za-z]+}", mWare.Authorized(gClient.ListAlbums))
+
 	getRouter.HandleFunc("/list-photos-from-album/{albumId:[-_0-9A-Za-z]+}", mWare.Authorized(gClient.ListPicturesFromAlbum))
+	getRouter.HandleFunc("/list-photos-from-album/{albumId:[-_0-9A-Za-z]+}/{pageSize:[0-9]+}", mWare.Authorized(gClient.ListPicturesFromAlbum))
+	getRouter.HandleFunc("/list-photos-from-album/{albumId:[-_0-9A-Za-z]+}/{pageToken:[-_+0-9A-Za-z]+}", mWare.Authorized(gClient.ListPicturesFromAlbum))
+	getRouter.HandleFunc("/list-photos-from-album/{albumId:[-_0-9A-Za-z]+}/{pageSize:[0-9]+}/{pageToken:[-_+0-9A-Za-z]+}", mWare.Authorized(gClient.ListPicturesFromAlbum))
+	
 	getRouter.HandleFunc("/oh-no", gClient.OhNo)
 
 	putRouter := serveMux.Methods(http.MethodPut).Subrouter()

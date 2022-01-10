@@ -41,9 +41,10 @@ message AlbumInfo {
 
 // Used to request list of photos from specific album
 message FromAlbumInfo {
-    string album_id = 1;
-    string page_token = 2;
-    int32 page_size = 3;
+    ClientInfo client_info = 1;
+    string album_id = 2;
+    string page_token = 3;
+    int32 page_size = 4;
 
 }
 

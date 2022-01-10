@@ -7,8 +7,11 @@ import (
 	"text/template"
 	"time"
 
+	clientProto "backend/grpc/proto/api/client"
+
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/boj/redistore.v1"
 )
 
@@ -52,7 +55,7 @@ func ConfigBuilder() *oauth2.Config {
 	return conf
 }
 
-func (mw *Middleware) Authorized(handler func(http.ResponseWriter, *http.Request, *http.Client)) http.HandlerFunc {
+func (mw *Middleware) Authorized(handler func(http.ResponseWriter, *http.Request, *clientProto.ClientInfo)) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		session, err := mw.store.Get(r, SESSION_KEY)
 		if err != nil {
@@ -66,21 +69,27 @@ func (mw *Middleware) Authorized(handler func(http.ResponseWriter, *http.Request
 			return
 		}
 
-		token := new(oauth2.Token)
-		token.AccessToken = accessToken.(string)
-		token.RefreshToken = session.Values[REFRESH_TOKEN_KEY].(string)
-		token.TokenType = session.Values[TOKEN_TYPE_KEY].(string)
-		token.Expiry, err = time.Parse(time.RFC3339Nano, session.Values[EXPIRY_KEY].(string))
-		if err != nil {
-			mw.logger.Fatalf("Error parsing time: %v", err)
-			http.Redirect(rw, r, "/", http.StatusInternalServerError)
-			return
-		}
+		// token := new(oauth2.Token)
+		// token.AccessToken = accessToken.(string)
+		// token.RefreshToken = session.Values[REFRESH_TOKEN_KEY].(string)
+		// token.TokenType = session.Values[TOKEN_TYPE_KEY].(string)
+		// token.Expiry, err = time.Parse(time.RFC3339Nano, session.Values[EXPIRY_KEY].(string))
+		// if err != nil {
+		// 	mw.logger.Fatalf("Error parsing time: %v", err)
+		// 	http.Redirect(rw, r, "/", http.StatusInternalServerError)
+		// 	return
+		// }
 
-		ctx := context.Background()
-		client := mw.config.Client(ctx, token)
+		// ctx := context.Background()
+		// client := mw.config.Client(ctx, token)
+		ts, _ := time.Parse(time.RFC3339Nano, session.Values[EXPIRY_KEY].(string))
+		ex := timestamppb.New(ts)
+		client := clientProto.ClientInfo{AccessToken: accessToken.(string),
+			RefreshToken: session.Values[REFRESH_TOKEN_KEY].(string),
+			TokenType:    session.Values[TOKEN_TYPE_KEY].(string),
+			Expiry:       ex}
 
-		handler(rw, r, client)
+		handler(rw, r, &client)
 
 		return
 
