@@ -20,19 +20,7 @@ const (
 	PHOTOS_ENDPOINT = "https://photoslibrary.googleapis.com/v1/mediaItems:search"
 	GET             = "GET"
 	POST            = "POST"
-
-	CLIENT_ID         = ""
-	CLIENT_SECRET     = ""
-	REDIRECT_URL      = "http://localhost:9090/oauth-callback"
-	SESSION_KEY       = "session-key"
-	ACCESS_TOKEN_KEY  = "access-token"
-	REFRESH_TOKEN_KEY = "refresh-token"
-	TOKEN_TYPE_KEY    = "token-type"
-	EXPIRY_KEY        = "expiry"
-	OAUTH_CODE_KEY    = "oauth-code"
 )
-
-var SCOPES = []string{"https://www.googleapis.com/auth/photoslibrary.readonly"}
 
 // listAlbums is a package private function utilized to make an
 // http request to the google photos API server. The response
@@ -58,7 +46,10 @@ func listAlbums(info *client.ClientInfo, logger *log.Logger) *photos.AlbumsInfo 
 		panic("Didn't get code 200")
 	}
 
+	defer resp.Body.Close()
+
 	result := albumListDecoder(resp.Body)
+
 	return albumsPogo2Proto(&result)
 
 }
@@ -92,7 +83,8 @@ func albumsPogo2Proto(result *POGO.AlbumsInfoPOGO) *photos.AlbumsInfo {
 			count = 0
 		}
 		slices = append(slices,
-			&photos.AlbumInfo{Id: info.Id,
+			&photos.AlbumInfo{
+				Id:                    info.Id,
 				Title:                 info.Title,
 				ProductUrl:            info.ProductUrl,
 				MediaItemsCount:       int32(count),
@@ -110,13 +102,13 @@ func albumsPogo2Proto(result *POGO.AlbumsInfoPOGO) *photos.AlbumsInfo {
 // Photos API server
 func createClient(info *client.ClientInfo) (*http.Client, error) {
 	token := new(oauth2.Token)
-	token.AccessToken = info.GetAccessToken()
-	token.RefreshToken = info.GetRefreshToken()
-	token.TokenType = info.GetTokenType()
-	token.Expiry = info.GetExpiry().AsTime()
+	token.AccessToken = info.GetTokenInfo().GetAccessToken()
+	token.RefreshToken = info.GetTokenInfo().GetRefreshToken()
+	token.TokenType = info.GetTokenInfo().GetTokenType()
+	token.Expiry = info.GetTokenInfo().GetExpiry().AsTime()
 
 	ctx := context.Background()
-	client := configBuilder().Client(ctx, token)
+	client := configBuilder(info).Client(ctx, token)
 
 	return client, nil
 }
@@ -124,12 +116,12 @@ func createClient(info *client.ClientInfo) (*http.Client, error) {
 // configBuilder configures the server with the
 // application registered credentials on Google's
 // API developers dashboard.
-func configBuilder() *oauth2.Config {
+func configBuilder(info *client.ClientInfo) *oauth2.Config {
 	return &oauth2.Config{
-		ClientID:     CLIENT_ID,
-		ClientSecret: CLIENT_SECRET,
-		RedirectURL:  REDIRECT_URL,
-		Scopes:       SCOPES,
+		ClientID:     info.GetAppCredentials().GetClientId(),
+		ClientSecret: info.GetAppCredentials().GetClientSecret(),
+		RedirectURL:  info.GetUrls().GetRedirectUrl(),
+		Scopes:       info.GetAppScopes().GetScopes(),
 		Endpoint:     google.Endpoint,
 	}
 }

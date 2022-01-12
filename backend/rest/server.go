@@ -1,6 +1,7 @@
 package main
 
 import (
+	protos "backend/grpc/proto/api/photos"
 	"backend/rest/handlers"
 	"backend/rest/middleware"
 	"log"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 	"gopkg.in/boj/redistore.v1"
 )
 
@@ -26,10 +28,18 @@ func main() {
 		return
 	}
 
-	/////// Initialize middleware and handlers here ///////
-	gClient := handlers.NewGoogleClient(logger)
+	/////// Initialize GRPC connections
+	photoConn, err := grpc.Dial("grpc_backend:9091", grpc.WithInsecure())
+	if err != nil{
+		panic(err)
+	}
+	defer photoConn.Close()
+	gpsc := protos.NewGooglePhotoServiceClient(photoConn)
 
+	/////// Initialize middleware and handlers here ///////
+	gClient := handlers.NewGoogleClient(logger, &gpsc)
 	mWare := middleware.NewMiddleWare(logger, store)
+
 	//Serve Mux to replace the default ServeMux
 	serveMux := mux.NewRouter()
 
@@ -48,7 +58,7 @@ func main() {
 	getRouter.HandleFunc("/list-photos-from-album/{albumId:[-_0-9A-Za-z]+}/{pageSize:[0-9]+}", mWare.Authorized(gClient.ListPicturesFromAlbum))
 	getRouter.HandleFunc("/list-photos-from-album/{albumId:[-_0-9A-Za-z]+}/{pageToken:[-_+0-9A-Za-z]+}", mWare.Authorized(gClient.ListPicturesFromAlbum))
 	getRouter.HandleFunc("/list-photos-from-album/{albumId:[-_0-9A-Za-z]+}/{pageSize:[0-9]+}/{pageToken:[-_+0-9A-Za-z]+}", mWare.Authorized(gClient.ListPicturesFromAlbum))
-	
+
 	getRouter.HandleFunc("/oh-no", gClient.OhNo)
 
 	putRouter := serveMux.Methods(http.MethodPut).Subrouter()

@@ -69,27 +69,32 @@ func (mw *Middleware) Authorized(handler func(http.ResponseWriter, *http.Request
 			return
 		}
 
-		// token := new(oauth2.Token)
-		// token.AccessToken = accessToken.(string)
-		// token.RefreshToken = session.Values[REFRESH_TOKEN_KEY].(string)
-		// token.TokenType = session.Values[TOKEN_TYPE_KEY].(string)
-		// token.Expiry, err = time.Parse(time.RFC3339Nano, session.Values[EXPIRY_KEY].(string))
-		// if err != nil {
-		// 	mw.logger.Fatalf("Error parsing time: %v", err)
-		// 	http.Redirect(rw, r, "/", http.StatusInternalServerError)
-		// 	return
-		// }
-
-		// ctx := context.Background()
-		// client := mw.config.Client(ctx, token)
 		ts, _ := time.Parse(time.RFC3339Nano, session.Values[EXPIRY_KEY].(string))
 		ex := timestamppb.New(ts)
-		client := clientProto.ClientInfo{AccessToken: accessToken.(string),
+
+		tokenInfo := clientProto.TokenInfo{
+			AccessToken:  accessToken.(string),
 			RefreshToken: session.Values[REFRESH_TOKEN_KEY].(string),
 			TokenType:    session.Values[TOKEN_TYPE_KEY].(string),
 			Expiry:       ex}
 
-		handler(rw, r, &client)
+		appCreds := clientProto.ApplicationCredentials{
+			ClientId:     CLIENT_ID,
+			ClientSecret: CLIENT_SECRET}
+
+		scoping := clientProto.Scoping{
+			Scopes: SCOPES}
+
+		url := clientProto.URL{
+			RedirectUrl: REDIRECT_URL}
+
+		clientInfo := clientProto.ClientInfo{
+			TokenInfo:      &tokenInfo,
+			AppCredentials: &appCreds,
+			AppScopes:      &scoping,
+			Urls:           &url}
+
+		handler(rw, r, &clientInfo)
 
 		return
 
