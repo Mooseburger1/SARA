@@ -78,3 +78,54 @@ func (ai *AlbumInfo) Equals(info AlbumInfo) bool {
 		return true
 	}
 }
+
+
+
+
+// PhotosInfoPOGO is a struct utilized to unmarshal the JSON
+// response from Google's Google Photos API for listing photos.
+// from a specific album. The response is a JSON object with
+// a key of "mediaItems" and a value of an array JSON values of
+// photos info
+// Ex. JSON Response:
+// {"mediaItems":[
+//     {
+//       "id": "",
+//       "productUrl": "",
+//       "baseUrl": "",
+//       "mimeType": "",
+//       "mediaMetadata": "",
+//       "filename", "",
+//      },
+//    ]
+//  }
+type PhotosInfoPOGO struct {
+	MediaItems []PhotosInfo `json:"mediaItems"`
+}
+
+
+
+// PhotosInfo is a struct utilized to unmarshal the JSON
+// response from Google's Google Photos API for listing photos.
+// from a specific album. The response is a JSON object with
+// a key of "mediaItems" and a value of an array JSON values of
+// photos info
+// Ex. JSON Response:
+// {"mediaItems":[
+//     {
+//       "id": "",
+//       "productUrl": "",
+//       "baseUrl": "",
+//       "mimeType": "",
+//       "mediaMetadata": "",
+//       "filename", "",
+//      },
+//    ]
+//  }
+type PhotosInfo struct {
+	Id string `json:"id"`
+	ProductUrl string `json:"productUrl"`
+	BaseUrl string `json:"baseUrl"`
+	MimeType string `json:"mimeType"`
+	Filename string `json:"filename"`
+}

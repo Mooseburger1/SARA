@@ -3,7 +3,6 @@ package services
 import (
 	"backend/grpc/proto/api/photos"
 	"context"
-	"fmt"
 	"log"
 )
 
@@ -23,20 +22,15 @@ func NewGphotoServer(logger *log.Logger) *GphotoServer {
 // ListAlbums is a RPC service endpoint. It receives an AlbumListRequest
 // proto and returns an AlbumsInfo proto. Internally it makes an Oauth2
 // authorized REST request to the Google Photos API server for listing albums.
-func (g *GphotoServer) ListAlbums(ctx context.Context, req *photos.AlbumListRequest) (*photos.AlbumsInfo, error) {
-	return listAlbums(req.GetClientInfo(), g.logger), nil
+func (g *GphotoServer) ListAlbums(ctx context.Context, rpc *photos.AlbumListRequest) (*photos.AlbumsInfo, error) {
+	return listAlbums(rpc.GetClientInfo(), g.logger), nil
 
 }
 
 // ListPhotosFromAlbum is a RPC service endpoint. It receives a
-// FromAlbumInfo proto and returns a PhotosInfo proto. Internally
+// FromAlbumRequest proto and returns a PhotosInfo proto. Internally
 // it makes an Oauth2 authorized rest request to the Google Photos API
 // server for listing photos from a specific album
-func (g *GphotoServer) ListPhotosFromAlbum(ctx context.Context, album_info *photos.FromAlbumInfo) (*photos.PhotosInfo, error) {
-	album_id := album_info.GetAlbumId()
-	page_token := album_info.GetPageToken()
-	page_size := album_info.GetPageSize()
-	//TODO
-	fmt.Print(album_id, page_token, page_size)
-	return &photos.PhotosInfo{}, nil
+func (g *GphotoServer) ListPhotosFromAlbum(ctx context.Context, rpc *photos.FromAlbumRequest) (*photos.PhotosInfo, error) {
+	return listPhotosFromAlbum(rpc, g.logger), nil
 }

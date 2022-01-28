@@ -4,8 +4,10 @@ import (
 	"backend/grpc/proto/api/POGO"
 	"backend/grpc/proto/api/client"
 	"backend/grpc/proto/api/photos"
+	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -21,6 +23,44 @@ const (
 	GET             = "GET"
 	POST            = "POST"
 )
+
+// listPhotosFromAlbum is a package private funciton utilized to make
+// an http request to the google photos API server, specifically the endpoint
+// which returns all photos for a specified album. The response is unmarshaled
+// and converted into an PhotosInfo protobuf
+func listPhotosFromAlbum(rpc *photos.FromAlbumRequest, logger *log.Logger) *photos.PhotosInfo {
+	clientInfo := rpc.GetClientInfo()
+	client, err := createClient(clientInfo)
+	if err != nil {
+		logger.Printf("Error creating client: %v", err)
+	}
+
+	requestBody := []byte(fmt.Sprintf(`{"albumId":"%v"}`, rpc.GetAlbumId()))
+
+	req, err := http.NewRequest(POST, PHOTOS_ENDPOINT, bytes.NewBuffer(requestBody))
+	if err != nil {
+		logger.Printf("Error creating new request: %v", err)
+	}
+
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		panic("Didn't get code 200")
+	}
+
+	defer resp.Body.Close()
+
+	result := photosFromAlbumDecoder(resp.Body)
+
+	return photosPogo2Proto(&result)
+
+}
 
 // listAlbums is a package private function utilized to make an
 // http request to the google photos API server. The response
@@ -54,14 +94,36 @@ func listAlbums(info *client.ClientInfo, logger *log.Logger) *photos.AlbumsInfo 
 
 }
 
+func photosFromAlbumDecoder(body io.ReadCloser) POGO.PhotosInfoPOGO {
+	var result POGO.PhotosInfoPOGO
+	json.NewDecoder(body).Decode(&result)
+	return result
+}
+
 // albumListDecoder takes in the response body from the
 // Google Photos API server for listing albums. It unmarshals
-// the JSON response into an AlbumsInfoPOGO struct. It utilized
+// the JSON response into an AlbumsInfoPOGO struct. It is utilized
 // solely by the listAlbums function
 func albumListDecoder(body io.ReadCloser) POGO.AlbumsInfoPOGO {
 	var result POGO.AlbumsInfoPOGO
 	json.NewDecoder(body).Decode(&result)
 	return result
+}
+
+func photosPogo2Proto(result *POGO.PhotosInfoPOGO) *photos.PhotosInfo {
+	var slices []*photos.PhotoInfo
+	for _, info := range result.MediaItems {
+		slices = append(slices,
+			&photos.PhotoInfo{
+				Id:         info.Id,
+				ProductUrl: info.ProductUrl,
+				BaseUrl:    info.BaseUrl,
+				MimeType:   info.MimeType,
+				Filename:   info.Filename,
+			})
+	}
+
+	return &photos.PhotosInfo{PhotosInfo: slices}
 }
 
 // albumsPogo2Proto converts an AlbumsInfoPOGO (plain old golang

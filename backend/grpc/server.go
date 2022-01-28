@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 func main() {
@@ -19,7 +20,7 @@ func main() {
 
 	protoPhotos.RegisterGooglePhotoServiceServer(grpcServer, photoServer)
 
-	//reflection.Register(grpcServer)
+	reflection.Register(grpcServer)
 	l, err := net.Listen("tcp", ":9091")
 	if err != nil {
 		logger.Fatal(err)

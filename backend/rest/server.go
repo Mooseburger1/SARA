@@ -30,7 +30,7 @@ func main() {
 
 	/////// Initialize GRPC connections
 	photoConn, err := grpc.Dial("grpc_backend:9091", grpc.WithInsecure())
-	if err != nil{
+	if err != nil {
 		panic(err)
 	}
 	defer photoConn.Close()
@@ -55,9 +55,9 @@ func main() {
 	getRouter.HandleFunc("/list-albums/{pageSize:[0-9]+}/{pageToken:[-_+0-9A-Za-z]+}", mWare.Authorized(gClient.ListAlbums))
 
 	getRouter.HandleFunc("/list-photos-from-album/{albumId:[-_0-9A-Za-z]+}", mWare.Authorized(gClient.ListPicturesFromAlbum))
-	getRouter.HandleFunc("/list-photos-from-album/{albumId:[-_0-9A-Za-z]+}/{pageSize:[0-9]+}", mWare.Authorized(gClient.ListPicturesFromAlbum))
-	getRouter.HandleFunc("/list-photos-from-album/{albumId:[-_0-9A-Za-z]+}/{pageToken:[-_+0-9A-Za-z]+}", mWare.Authorized(gClient.ListPicturesFromAlbum))
-	getRouter.HandleFunc("/list-photos-from-album/{albumId:[-_0-9A-Za-z]+}/{pageSize:[0-9]+}/{pageToken:[-_+0-9A-Za-z]+}", mWare.Authorized(gClient.ListPicturesFromAlbum))
+	//getRouter.HandleFunc("/list-photos-from-album/{albumId:[-_0-9A-Za-z]+}/{pageSize:[0-9]+}", mWare.Authorized(gClient.ListPicturesFromAlbum))
+	//getRouter.HandleFunc("/list-photos-from-album/{albumId:[-_0-9A-Za-z]+}/{pageToken:[-_+0-9A-Za-z]+}", mWare.Authorized(gClient.ListPicturesFromAlbum))
+	//getRouter.HandleFunc("/list-photos-from-album/{albumId:[-_0-9A-Za-z]+}/{pageSize:[0-9]+}/{pageToken:[-_+0-9A-Za-z]+}", mWare.Authorized(gClient.ListPicturesFromAlbum))
 
 	getRouter.HandleFunc("/oh-no", gClient.OhNo)
 

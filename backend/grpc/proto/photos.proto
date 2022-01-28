@@ -6,7 +6,7 @@ option go_package = "backend/grpc/proto/api/photos";
 
 service GooglePhotoService {
     rpc ListAlbums(AlbumListRequest) returns (AlbumsInfo);
-    rpc ListPhotosFromAlbum(FromAlbumInfo) returns (PhotosInfo); 
+    rpc ListPhotosFromAlbum(FromAlbumRequest) returns (PhotosInfo); 
 }
 
 
@@ -40,7 +40,7 @@ message AlbumInfo {
 
 
 // Used to request list of photos from specific album
-message FromAlbumInfo {
+message FromAlbumRequest {
     ClientInfo client_info = 1;
     string album_id = 2;
     string page_token = 3;
