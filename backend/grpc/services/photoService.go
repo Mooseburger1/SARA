@@ -23,7 +23,7 @@ func NewGphotoServer(logger *log.Logger) *GphotoServer {
 // proto and returns an AlbumsInfo proto. Internally it makes an Oauth2
 // authorized REST request to the Google Photos API server for listing albums.
 func (g *GphotoServer) ListAlbums(ctx context.Context, rpc *photos.AlbumListRequest) (*photos.AlbumsInfo, error) {
-	return listAlbums(rpc.GetClientInfo(), g.logger), nil
+	return listAlbums(rpc, g.logger), nil
 
 }
 

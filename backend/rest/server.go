@@ -43,29 +43,24 @@ func main() {
 	//Serve Mux to replace the default ServeMux
 	serveMux := mux.NewRouter()
 
-	//Create filtered Routers to handle specific verbs
+	// GET SUBROUTER
 	getRouter := serveMux.Methods(http.MethodGet).Subrouter()
 	//getRouter.HandleFunc("/", )
 	getRouter.HandleFunc("/authenticate", mWare.Authenticate)
 	getRouter.HandleFunc("/oauth-callback", mWare.RedirectCallback)
 
-	getRouter.HandleFunc("/list-albums", mWare.Authorized(gClient.ListAlbums))
-	getRouter.HandleFunc("/list-albums/{pageSize:[0-9]+}", mWare.Authorized(gClient.ListAlbums))
-	getRouter.HandleFunc("/list-albums/{pageToken:[-_+0-9A-Za-z]+}", mWare.Authorized(gClient.ListAlbums))
-	getRouter.HandleFunc("/list-albums/{pageSize:[0-9]+}/{pageToken:[-_+0-9A-Za-z]+}", mWare.Authorized(gClient.ListAlbums))
-
-	getRouter.HandleFunc("/list-photos-from-album/{albumId:[-_0-9A-Za-z]+}", mWare.Authorized(gClient.ListPicturesFromAlbum))
-	//getRouter.HandleFunc("/list-photos-from-album/{albumId:[-_0-9A-Za-z]+}/{pageSize:[0-9]+}", mWare.Authorized(gClient.ListPicturesFromAlbum))
-	//getRouter.HandleFunc("/list-photos-from-album/{albumId:[-_0-9A-Za-z]+}/{pageToken:[-_+0-9A-Za-z]+}", mWare.Authorized(gClient.ListPicturesFromAlbum))
-	//getRouter.HandleFunc("/list-photos-from-album/{albumId:[-_0-9A-Za-z]+}/{pageSize:[0-9]+}/{pageToken:[-_+0-9A-Za-z]+}", mWare.Authorized(gClient.ListPicturesFromAlbum))
-
+	//route for listing albums - optional params {pageSize | pageToken}
+	getRouter.HandleFunc("/photos/albumsList", mWare.Authorized(gClient.ListAlbums))
 	getRouter.HandleFunc("/oh-no", gClient.OhNo)
 
+	// PUT SUBROUTER
 	putRouter := serveMux.Methods(http.MethodPut).Subrouter()
 	putRouter.HandleFunc("/", mWare.Authenticate)
 
-	postRouter := serveMux.Methods(http.MethodPost).Subrouter()
-	postRouter.HandleFunc("/", mWare.Authenticate)
+	// POST SUBROUTER
+	//postRouter := serveMux.Methods(http.MethodPost).Subrouter()
+	//route for listing photos in an album - optional params {pageSize | pageToken}
+	getRouter.HandleFunc("/photos/album/{albumId:[-_0-9A-Za-z]+}", mWare.Authorized(gClient.ListPicturesFromAlbum))
 
 	// Configure the server {TODO: move these to an external configurable file/location}
 	server := &http.Server{

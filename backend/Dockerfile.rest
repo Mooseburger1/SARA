@@ -6,7 +6,6 @@ FROM golang:latest
 
 COPY . /app
 
-
 EXPOSE 9090
 
 WORKDIR /app/rest

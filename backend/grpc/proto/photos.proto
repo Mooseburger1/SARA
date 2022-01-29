@@ -24,6 +24,7 @@ message AlbumListRequest {
 // JSON items.
 message AlbumsInfo {
     repeated AlbumInfo albums_info = 1;
+    string next_page_token = 2;
 }
 
 
@@ -51,6 +52,7 @@ message FromAlbumRequest {
 // Response from listing photos from an album
 message PhotosInfo {
     repeated PhotoInfo photos_info = 1;
+    string next_page_token = 2;
 }
 
 // Information for each photo in a request

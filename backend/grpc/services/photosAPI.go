@@ -35,7 +35,7 @@ func listPhotosFromAlbum(rpc *photos.FromAlbumRequest, logger *log.Logger) *phot
 		logger.Printf("Error creating client: %v", err)
 	}
 
-	requestBody := []byte(fmt.Sprintf(`{"albumId":"%v"}`, rpc.GetAlbumId()))
+	requestBody := []byte(fmt.Sprintf(`{"albumId":"%v", "pageSize":"%v", "pageToken":"%v"}`, rpc.GetAlbumId(), rpc.GetPageSize(), rpc.GetPageToken()))
 
 	req, err := http.NewRequest(POST, PHOTOS_ENDPOINT, bytes.NewBuffer(requestBody))
 	if err != nil {
@@ -51,7 +51,7 @@ func listPhotosFromAlbum(rpc *photos.FromAlbumRequest, logger *log.Logger) *phot
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		panic("Didn't get code 200")
+		logger.Fatalf("Bad Result Code: %v", resp.Body)
 	}
 
 	defer resp.Body.Close()
@@ -65,8 +65,8 @@ func listPhotosFromAlbum(rpc *photos.FromAlbumRequest, logger *log.Logger) *phot
 // listAlbums is a package private function utilized to make an
 // http request to the google photos API server. The response
 // is unmarshalled and converted into an AlbumsInfo protobuf
-func listAlbums(info *client.ClientInfo, logger *log.Logger) *photos.AlbumsInfo {
-	client, err := createClient(info)
+func listAlbums(rpc *photos.AlbumListRequest, logger *log.Logger) *photos.AlbumsInfo {
+	client, err := createClient(rpc.GetClientInfo())
 	if err != nil {
 		logger.Printf("Error creating client: %v", err)
 	}
@@ -76,6 +76,11 @@ func listAlbums(info *client.ClientInfo, logger *log.Logger) *photos.AlbumsInfo 
 		logger.Printf("Error creating new request: %v", err)
 	}
 
+	query := req.URL.Query()
+	query.Add("pageToken", rpc.GetPageToken())
+	query.Add("pageSize", strconv.Itoa(int(rpc.GetPageSize())))
+	req.URL.RawQuery = query.Encode()
+
 	req.Header.Set("Accept", "application/json")
 	resp, err := client.Do(req)
 	if err != nil {
@@ -83,7 +88,7 @@ func listAlbums(info *client.ClientInfo, logger *log.Logger) *photos.AlbumsInfo 
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		panic("Didn't get code 200")
+		logger.Fatalf("Error making request: %v", resp.Body)
 	}
 
 	defer resp.Body.Close()
@@ -123,7 +128,7 @@ func photosPogo2Proto(result *POGO.PhotosInfoPOGO) *photos.PhotosInfo {
 			})
 	}
 
-	return &photos.PhotosInfo{PhotosInfo: slices}
+	return &photos.PhotosInfo{PhotosInfo: slices, NextPageToken: result.NextPageToken}
 }
 
 // albumsPogo2Proto converts an AlbumsInfoPOGO (plain old golang
@@ -154,7 +159,7 @@ func albumsPogo2Proto(result *POGO.AlbumsInfoPOGO) *photos.AlbumsInfo {
 				CoverPhotoMediaItemId: info.CoverPhotoMediaItemId})
 	}
 
-	return &photos.AlbumsInfo{AlbumsInfo: slices}
+	return &photos.AlbumsInfo{AlbumsInfo: slices, NextPageToken: result.NextPageToken}
 }
 
 // createClient is a package private function utilized

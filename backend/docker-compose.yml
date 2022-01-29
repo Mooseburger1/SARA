@@ -4,6 +4,7 @@ services:
     image: 'redis'
     stdin_open: true
     tty: true
+
   rest-backend:
     image: 'rest_backend'
     container_name: 'rest_backend'
@@ -12,10 +13,14 @@ services:
     stdin_open: true
     tty: true
     ports:
-        - "9090:9090"
+      - "9090:9090"
+    environment:
+      - GOOGLE_API_ID=${GOOGLE_API_ID}
+      - GOOGLE_API_SECRET=${GOOGLE_API_SECRET}
     build:
         context: .
         dockerfile: ./Dockerfile.rest
+        
   grpc-backend:
     image: 'grpc_backend'
     container_name: 'grpc_backend'

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
 	"text/template"
 	"time"
 
@@ -16,8 +17,6 @@ import (
 )
 
 const (
-	CLIENT_ID         = ""
-	CLIENT_SECRET     = ""
 	REDIRECT_URL      = "http://localhost:9090/oauth-callback"
 	SESSION_KEY       = "session-key"
 	ACCESS_TOKEN_KEY  = "access-token"
@@ -27,6 +26,8 @@ const (
 	OAUTH_CODE_KEY    = "oauth-code"
 )
 
+var CLIENT_ID = os.Getenv("GOOGLE_API_ID")
+var CLIENT_SECRET = os.Getenv("GOOGLE_API_SECRET")
 var SCOPES = []string{"https://www.googleapis.com/auth/photoslibrary.readonly"}
 
 type Middleware struct {
@@ -132,7 +133,7 @@ func (mw *Middleware) RedirectCallback(rw http.ResponseWriter, r *http.Request) 
 
 	// Extract google code
 	code := r.FormValue("code")
-	mw.logger.Printf("Code %v: \n", code)
+
 	if code == "" {
 		mw.logger.Fatal("Code not found...")
 		rw.Write([]byte("Code Not Found to provide AccessToken..\n"))

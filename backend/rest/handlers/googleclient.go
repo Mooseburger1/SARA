@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -40,9 +41,12 @@ func (gc *GoogleClient) ListAlbums(rw http.ResponseWriter, r *http.Request, clie
 		panic(err)
 	}
 
-	gc.logger.Printf("%v", albums)
+	JSON, err := json.Marshal(albums)
+	if err != nil {
+		gc.logger.Printf("Unable to marshal: %v", err)
+	}
 
-	return
+	rw.Write(JSON)
 
 }
 
@@ -54,54 +58,19 @@ func (gc *GoogleClient) ListPicturesFromAlbum(rw http.ResponseWriter, r *http.Re
 		panic(err)
 	}
 
-	gc.logger.Printf("%v", photos)
+	JSON, err := json.Marshal(photos)
+	if err != nil {
+		gc.logger.Printf("Unable to marshal: %v", err)
+	}
 
-
-	return
-
+	rw.Write(JSON)
 }
-
-
-	// var result datamodels.MediaItems
-
-	// req, err := http.NewRequest("POST", PHOTOS_ENDPOINT, strings.NewReader(makeAlbumIdRequestBody(r)))
-	// if err != nil {
-	// 	gc.logger.Fatalf("Failed to create new request: %v", err)
-	// }
-
-	// req.Header.Set("Content-Type", "application/json")
-	// req.Header.Set("Accept", "application/json")
-
-	// resp, err := client.Do(req)
-	// if err != nil {
-	// 	gc.logger.Printf("Get: %v\n", err.Error())
-	// 	http.Redirect(rw, r, "/", http.StatusTemporaryRedirect)
-	// 	return
-	// }
-
-	// defer resp.Body.Close()
-
-	// if resp.StatusCode != http.StatusOK {
-	// 	response, _ := ioutil.ReadAll(resp.Body)
-	// 	rw.Write([]byte(string(response)))
-	// 	return
-	// }
-
-	// err = json.NewDecoder(resp.Body).Decode(&result)
-	// if err != nil {
-	// 	gc.logger.Printf("ReadAll: %v\n", err.Error())
-	// 	http.Redirect(rw, r, "/", http.StatusTemporaryRedirect)
-	// 	return
-	// }
-	// gc.logger.Printf("%v", result)
-
-
 
 func makePhotosFromAlbumRequest(r *http.Request, ci *clientProto.ClientInfo) *photosProto.FromAlbumRequest {
 	vars := mux.Vars(r)
 	albumId := vars["albumId"]
-	pageToken := vars["pageToken"]
-	pageSize := vars["pageSize"]
+	pageToken := r.URL.Query().Get("pageToken")
+	pageSize := r.URL.Query().Get("pageSize")
 
 	var req photosProto.FromAlbumRequest
 	req.ClientInfo = ci
@@ -120,12 +89,8 @@ func makePhotosFromAlbumRequest(r *http.Request, ci *clientProto.ClientInfo) *ph
 	if pageToken != "" {
 		req.PageToken = pageToken
 	}
-
 	return &req
 }
-
-
-
 
 // makeAlbumListRequest is a package private helper function
 // utilized to extract variables from the API URL and generate
@@ -133,9 +98,9 @@ func makePhotosFromAlbumRequest(r *http.Request, ci *clientProto.ClientInfo) *ph
 // for the REST endpoint of list-albums and constructs the necessary
 // RPC proto.
 func makeAlbumListRequest(r *http.Request, ci *clientProto.ClientInfo) *photosProto.AlbumListRequest {
-	vars := mux.Vars(r)
-	pageSize := vars["pageSize"]
-	pageToken := vars["pageToken"]
+
+	pageToken := r.URL.Query().Get("pageToken")
+	pageSize := r.URL.Query().Get("pageSize")
 
 	var req photosProto.AlbumListRequest
 	req.ClientInfo = ci
@@ -157,7 +122,6 @@ func makeAlbumListRequest(r *http.Request, ci *clientProto.ClientInfo) *photosPr
 	return &req
 }
 
-
 // str2Int32 is a package private helper function
 // for type conversion
 func str2Int32(val string) (int32, error) {
@@ -168,8 +132,6 @@ func str2Int32(val string) (int32, error) {
 
 	return int32(i), nil
 }
-
-
 
 func makeAlbumIdRequestBody(r *http.Request) string {
 	vars := mux.Vars(r)

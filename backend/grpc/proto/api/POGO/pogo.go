@@ -17,7 +17,8 @@ package POGO
 //    ]
 //  }
 type AlbumsInfoPOGO struct {
-	AlbumsInfo []AlbumInfo `json:"albums"`
+	AlbumsInfo    []AlbumInfo `json:"albums"`
+	NextPageToken string      `json:"nextPageToken"`
 }
 
 // AlbumsInfo is a struct utilized to unmarshal the JSON
@@ -79,9 +80,6 @@ func (ai *AlbumInfo) Equals(info AlbumInfo) bool {
 	}
 }
 
-
-
-
 // PhotosInfoPOGO is a struct utilized to unmarshal the JSON
 // response from Google's Google Photos API for listing photos.
 // from a specific album. The response is a JSON object with
@@ -100,10 +98,9 @@ func (ai *AlbumInfo) Equals(info AlbumInfo) bool {
 //    ]
 //  }
 type PhotosInfoPOGO struct {
-	MediaItems []PhotosInfo `json:"mediaItems"`
+	MediaItems    []PhotosInfo `json:"mediaItems"`
+	NextPageToken string       `json:"nextPageToken"`
 }
-
-
 
 // PhotosInfo is a struct utilized to unmarshal the JSON
 // response from Google's Google Photos API for listing photos.
@@ -123,9 +120,9 @@ type PhotosInfoPOGO struct {
 //    ]
 //  }
 type PhotosInfo struct {
-	Id string `json:"id"`
+	Id         string `json:"id"`
 	ProductUrl string `json:"productUrl"`
-	BaseUrl string `json:"baseUrl"`
-	MimeType string `json:"mimeType"`
-	Filename string `json:"filename"`
+	BaseUrl    string `json:"baseUrl"`
+	MimeType   string `json:"mimeType"`
+	Filename   string `json:"filename"`
 }
