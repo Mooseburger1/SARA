@@ -5,6 +5,10 @@ option go_package = "backend/grpc/proto/api/client";
 import "google/protobuf/timestamp.proto";
 
 
+// ClientInfo is the main transport proto which 
+// contains credential and all other infromation
+// to establish a Google OAuth2.0 client for making
+// API calls
 message ClientInfo {
     TokenInfo token_info = 1;
     ApplicationCredentials app_credentials = 2;
@@ -13,11 +17,19 @@ message ClientInfo {
 
 }
 
+// ApplicationCredentials is a proto that communicates
+// the application's registered credentials
 message ApplicationCredentials {
     string client_id = 1;
     string client_secret = 2;
 }
 
+
+// TokenInfo is the transport proto that communicates
+// token info saved/stored during an established 
+// session. This info is utilized for creating
+// and refreshing a Google OAuth2.0 Client for making
+// API calls
 message TokenInfo {
     string access_token = 1;
     string refresh_token = 2;
@@ -25,10 +37,18 @@ message TokenInfo {
     google.protobuf.Timestamp expiry = 4;
 }
 
+// Scoping is the transport proto that communicates
+// what scoping privilieges the client is to have.
+// See Google API docs for more information on scopoing
 message Scoping {
     repeated string scopes = 1;
 }
 
+
+// URL conveys the redirect url Google servers need
+// to complete an OAuth2.0 transaction. This is the url
+// the application is redirected to after completing the 
+// OAuth2.0 workflow
 message URL {
     string redirect_url = 1;
 }

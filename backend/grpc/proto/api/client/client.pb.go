@@ -21,6 +21,10 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// ClientInfo is the main transport proto which
+// contains credential and all other infromation
+// to establish a Google OAuth2.0 client for making
+// API calls
 type ClientInfo struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -92,6 +96,8 @@ func (x *ClientInfo) GetUrls() *URL {
 	return nil
 }
 
+// ApplicationCredentials is a proto that communicates
+// the application's registered credentials
 type ApplicationCredentials struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -147,6 +153,11 @@ func (x *ApplicationCredentials) GetClientSecret() string {
 	return ""
 }
 
+// TokenInfo is the transport proto that communicates
+// token info saved/stored during an established
+// session. This info is utilized for creating
+// and refreshing a Google OAuth2.0 Client for making
+// API calls
 type TokenInfo struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -218,6 +229,9 @@ func (x *TokenInfo) GetExpiry() *timestamp.Timestamp {
 	return nil
 }
 
+// Scoping is the transport proto that communicates
+// what scoping privilieges the client is to have.
+// See Google API docs for more information on scopoing
 type Scoping struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -265,6 +279,10 @@ func (x *Scoping) GetScopes() []string {
 	return nil
 }
 
+// URL conveys the redirect url Google servers need
+// to complete an OAuth2.0 transaction. This is the url
+// the application is redirected to after completing the
+// OAuth2.0 workflow
 type URL struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
