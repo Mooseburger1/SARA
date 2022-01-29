@@ -25,6 +25,7 @@ message AlbumListRequest {
 message AlbumsInfo {
     repeated AlbumInfo albums_info = 1;
     string next_page_token = 2;
+    bytes failed_request = 3;
 }
 
 
@@ -53,6 +54,7 @@ message FromAlbumRequest {
 message PhotosInfo {
     repeated PhotoInfo photos_info = 1;
     string next_page_token = 2;
+    bytes failed_request = 3;
 }
 
 // Information for each photo in a request

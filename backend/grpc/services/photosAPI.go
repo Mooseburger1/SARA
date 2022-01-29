@@ -24,11 +24,19 @@ const (
 	POST            = "POST"
 )
 
+type PhotosAPICallError struct {
+	Response *http.Response
+}
+
+func (pe *PhotosAPICallError) Error() string {
+	return "Did Not Get HTTP Status 200 OK"
+}
+
 // listPhotosFromAlbum is a package private funciton utilized to make
 // an http request to the google photos API server, specifically the endpoint
 // which returns all photos for a specified album. The response is unmarshaled
 // and converted into an PhotosInfo protobuf
-func listPhotosFromAlbum(rpc *photos.FromAlbumRequest, logger *log.Logger) *photos.PhotosInfo {
+func listPhotosFromAlbum(rpc *photos.FromAlbumRequest, logger *log.Logger) (*photos.PhotosInfo, error) {
 	clientInfo := rpc.GetClientInfo()
 	client, err := createClient(clientInfo)
 	if err != nil {
@@ -50,22 +58,27 @@ func listPhotosFromAlbum(rpc *photos.FromAlbumRequest, logger *log.Logger) *phot
 		panic(err)
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		logger.Fatalf("Bad Result Code: %v", resp.Body)
-	}
-
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
 
+		logger.Printf("Call to List Albums returned status code %v, not %v", resp.StatusCode, http.StatusOK)
+		bodyBytes, err := io.ReadAll(resp.Body)
+
+		if err != nil {
+			panic(err)
+		}
+		return &photos.PhotosInfo{FailedRequest: bodyBytes}, nil
+	}
 	result := photosFromAlbumDecoder(resp.Body)
 
-	return photosPogo2Proto(&result)
+	return photosPogo2Proto(&result), nil
 
 }
 
 // listAlbums is a package private function utilized to make an
 // http request to the google photos API server. The response
 // is unmarshalled and converted into an AlbumsInfo protobuf
-func listAlbums(rpc *photos.AlbumListRequest, logger *log.Logger) *photos.AlbumsInfo {
+func listAlbums(rpc *photos.AlbumListRequest, logger *log.Logger) (*photos.AlbumsInfo, error) {
 	client, err := createClient(rpc.GetClientInfo())
 	if err != nil {
 		logger.Printf("Error creating client: %v", err)
@@ -86,16 +99,21 @@ func listAlbums(rpc *photos.AlbumListRequest, logger *log.Logger) *photos.Albums
 	if err != nil {
 		panic(err)
 	}
-
-	if resp.StatusCode != http.StatusOK {
-		logger.Fatalf("Error making request: %v", resp.Body)
-	}
-
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+
+		logger.Printf("Call to List Albums returned status code %v, not %v", resp.StatusCode, http.StatusOK)
+		bodyBytes, err := io.ReadAll(resp.Body)
+
+		if err != nil {
+			panic(err)
+		}
+		return &photos.AlbumsInfo{FailedRequest: bodyBytes}, nil
+	}
 
 	result := albumListDecoder(resp.Body)
 
-	return albumsPogo2Proto(&result)
+	return albumsPogo2Proto(&result), nil
 
 }
 

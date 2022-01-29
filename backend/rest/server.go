@@ -37,8 +37,9 @@ func main() {
 	gpsc := protos.NewGooglePhotoServiceClient(photoConn)
 
 	/////// Initialize middleware and handlers here ///////
-	gClient := handlers.NewGoogleClient(logger, &gpsc)
+	gClient := handlers.NewGoogleClient(logger)
 	mWare := middleware.NewMiddleWare(logger, store)
+	pCaller := middleware.NewPhotosRpcCaller(logger, &gpsc)
 
 	//Serve Mux to replace the default ServeMux
 	serveMux := mux.NewRouter()
@@ -50,7 +51,7 @@ func main() {
 	getRouter.HandleFunc("/oauth-callback", mWare.RedirectCallback)
 
 	//route for listing albums - optional params {pageSize | pageToken}
-	getRouter.HandleFunc("/photos/albumsList", mWare.Authorized(gClient.ListAlbums))
+	getRouter.HandleFunc("/photos/albumsList", mWare.Authorized(pCaller.ListAlbumsCallWithError(gClient.ListAlbums)))
 	getRouter.HandleFunc("/oh-no", gClient.OhNo)
 
 	// PUT SUBROUTER

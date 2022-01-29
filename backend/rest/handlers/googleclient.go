@@ -24,24 +24,17 @@ type GoogleClient struct {
 // NewGoogleClient creates a GoogleClient instance. The instance
 // exposes methods to make RPC calls to the photos RPC server that
 // interacts with the Google photos API
-func NewGoogleClient(logger *log.Logger, pc *photosProto.GooglePhotoServiceClient) *GoogleClient {
+func NewGoogleClient(logger *log.Logger) *GoogleClient {
 	return &GoogleClient{
-		logger:       logger,
-		photosClient: pc,
+		logger: logger,
 	}
 }
 
 // ListAlbums makes RPC call to the photos RPC server. More specifically
 // it invokes the ListAlbums endpoint of ther RPC server.
-func (gc *GoogleClient) ListAlbums(rw http.ResponseWriter, r *http.Request, client *clientProto.ClientInfo) {
-	listRequest := makeAlbumListRequest(r, client)
-	pc := *gc.photosClient
-	albums, err := pc.ListAlbums(context.Background(), listRequest)
-	if err != nil {
-		panic(err)
-	}
+func (gc *GoogleClient) ListAlbums(rw http.ResponseWriter, r *http.Request, ai *photosProto.AlbumsInfo) {
 
-	JSON, err := json.Marshal(albums)
+	JSON, err := json.Marshal(ai)
 	if err != nil {
 		gc.logger.Printf("Unable to marshal: %v", err)
 	}
