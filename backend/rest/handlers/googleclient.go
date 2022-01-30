@@ -3,98 +3,60 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
-	"strings"
+	"strconv"
 	"text/template"
 
 	"log"
 
-	"rest/datamodels"
+	photosProto "backend/grpc/proto/api/photos"
 
 	"github.com/gorilla/mux"
 )
 
-const (
-	ALBUMS_ENDPOINT = "https://photoslibrary.googleapis.com/v1/albums"
-	PHOTOS_ENDPOINT = "https://photoslibrary.googleapis.com/v1/mediaItems:search"
-	GET             = "GET"
-	POST            = "POST"
-)
-
 type GoogleClient struct {
-	logger *log.Logger
+	logger       *log.Logger
+	photosClient *photosProto.GooglePhotoServiceClient
 }
 
+// NewGoogleClient creates a GoogleClient instance. The instance
+// exposes methods to make RPC calls to the photos RPC server that
+// interacts with the Google photos API
 func NewGoogleClient(logger *log.Logger) *GoogleClient {
-	return &GoogleClient{logger: logger}
+	return &GoogleClient{
+		logger: logger,
+	}
 }
 
-// ListAlbums utilizes photoslibrary googleapis to list all albums in the
-// Google photos account.
-func (gc GoogleClient) ListAlbums(rw http.ResponseWriter, r *http.Request, client *http.Client) {
+// ListAlbums makes RPC call to the photos RPC server. More specifically
+// it invokes the ListAlbums endpoint of ther RPC server.
+func (gc *GoogleClient) ListAlbums(rw http.ResponseWriter, r *http.Request, ai *photosProto.AlbumsInfo) {
 
-	req, err := http.NewRequest(GET, ALBUMS_ENDPOINT, nil)
-	req.Header.Set("Accept", "application/json")
-
-	// Use the client to make request to Google Photos API for list albums
-	resp, err := client.Do(req)
+	JSON, err := json.Marshal(ai)
 	if err != nil {
-		gc.logger.Printf("Get: %v\n", err.Error())
-		http.Redirect(rw, r, "/", http.StatusTemporaryRedirect)
-		return
+		gc.logger.Printf("Unable to marshal: %v", err)
 	}
-	defer resp.Body.Close()
-
-	response, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		gc.logger.Printf("ReadAll: %v\n", err.Error())
-		http.Redirect(rw, r, "/", http.StatusTemporaryRedirect)
-		return
-	}
-
-	rw.Write([]byte(string(response)))
-	return
-
+	rw.Write(JSON)
 }
 
-func (gc GoogleClient) ListPicturesFromAlbum(rw http.ResponseWriter, r *http.Request, client *http.Client) {
+func (gc *GoogleClient) ListPhotosFromAlbum(rw http.ResponseWriter, r *http.Request, pi *photosProto.PhotosInfo) {
 
-	var result datamodels.MediaItems
-
-	req, err := http.NewRequest("POST", PHOTOS_ENDPOINT, strings.NewReader(makeAlbumIdRequestBody(r)))
+	JSON, err := json.Marshal(pi)
 	if err != nil {
-		gc.logger.Fatalf("Failed to create new request: %v", err)
+		gc.logger.Printf("Unable to marshal: %v", err)
 	}
+	rw.Write(JSON)
+}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := client.Do(req)
+// str2Int32 is a package private helper function
+// for type conversion
+func str2Int32(val string) (int32, error) {
+	i, err := strconv.Atoi(val)
 	if err != nil {
-		gc.logger.Printf("Get: %v\n", err.Error())
-		http.Redirect(rw, r, "/", http.StatusTemporaryRedirect)
-		return
+		return 0, err
 	}
 
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		response, _ := ioutil.ReadAll(resp.Body)
-		rw.Write([]byte(string(response)))
-		return
-	}
-
-	err = json.NewDecoder(resp.Body).Decode(&result)
-	if err != nil {
-		gc.logger.Printf("ReadAll: %v\n", err.Error())
-		http.Redirect(rw, r, "/", http.StatusTemporaryRedirect)
-		return
-	}
-	gc.logger.Printf("%v", result)
-
-	return
-
+	return int32(i), nil
 }
 
 func makeAlbumIdRequestBody(r *http.Request) string {
@@ -103,7 +65,7 @@ func makeAlbumIdRequestBody(r *http.Request) string {
 }
 
 // OhNo is the default Redirect handler for when a user has done something stupid
-func (gc GoogleClient) OhNo(rw http.ResponseWriter, r *http.Request) {
+func (gc *GoogleClient) OhNo(rw http.ResponseWriter, r *http.Request) {
 	templ := template.Must(template.New("Oh-No").Parse(`
 	<h1>OH NO</h1>`))
 

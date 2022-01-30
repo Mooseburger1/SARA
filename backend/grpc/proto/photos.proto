@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+import "client.proto";
+
+option go_package = "backend/grpc/proto/api/photos";
+
+service GooglePhotoService {
+    rpc ListAlbums(AlbumListRequest) returns (AlbumsInfo);
+    rpc ListPhotosFromAlbum(FromAlbumRequest) returns (PhotosInfo); 
+}
+
+
+// In Order to list all available albums
+// no extra info is required except the Oauth
+// information to create a client to make the request
+message AlbumListRequest {
+    ClientInfo client_info = 1;
+    int32 page_size = 2;
+    string page_token = 3;
+}
+
+
+// Response from listing albums is a list of
+// JSON items.
+message AlbumsInfo {
+    repeated AlbumInfo albums_info = 1;
+    string next_page_token = 2;
+    bytes failed_request = 3;
+}
+
+
+// Information for each album in a request 
+// for list of albums
+message AlbumInfo {
+    string id = 1;
+    string title = 2;
+    string product_url = 3;
+    int32 media_items_count = 4;
+    string cover_photo_base_url = 5;
+    string cover_photo_media_item_id = 6;
+}
+
+
+// Used to request list of photos from specific album
+message FromAlbumRequest {
+    ClientInfo client_info = 1;
+    string album_id = 2;
+    string page_token = 3;
+    int32 page_size = 4;
+
+}
+
+// Response from listing photos from an album
+message PhotosInfo {
+    repeated PhotoInfo photos_info = 1;
+    string next_page_token = 2;
+    bytes failed_request = 3;
+}
+
+// Information for each photo in a request
+// for list of photos from album
+message PhotoInfo {
+    string id = 1;
+    string product_url = 2;
+    string base_url = 3;
+    string mime_type = 4;
+    string filename = 5;
+}

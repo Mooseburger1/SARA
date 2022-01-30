@@ -1,0 +1,13 @@
+
+#Golang Image
+FROM golang:latest
+
+COPY . /app
+
+EXPOSE 9091
+
+WORKDIR /app/grpc
+
+RUN go build
+
+CMD ["./grpc"]

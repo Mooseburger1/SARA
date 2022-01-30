@@ -4,17 +4,19 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
 	"text/template"
 	"time"
 
+	clientProto "backend/grpc/proto/api/client"
+
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/boj/redistore.v1"
 )
 
 const (
-	CLIENT_ID         = ""
-	CLIENT_SECRET     = ""
 	REDIRECT_URL      = "http://localhost:9090/oauth-callback"
 	SESSION_KEY       = "session-key"
 	ACCESS_TOKEN_KEY  = "access-token"
@@ -24,6 +26,8 @@ const (
 	OAUTH_CODE_KEY    = "oauth-code"
 )
 
+var CLIENT_ID = os.Getenv("GOOGLE_API_ID")
+var CLIENT_SECRET = os.Getenv("GOOGLE_API_SECRET")
 var SCOPES = []string{"https://www.googleapis.com/auth/photoslibrary.readonly"}
 
 type Middleware struct {
@@ -52,7 +56,7 @@ func ConfigBuilder() *oauth2.Config {
 	return conf
 }
 
-func (mw *Middleware) Authorized(handler func(http.ResponseWriter, *http.Request, *http.Client)) http.HandlerFunc {
+func (mw *Middleware) Authorized(handler func(http.ResponseWriter, *http.Request, *clientProto.ClientInfo)) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		session, err := mw.store.Get(r, SESSION_KEY)
 		if err != nil {
@@ -66,21 +70,32 @@ func (mw *Middleware) Authorized(handler func(http.ResponseWriter, *http.Request
 			return
 		}
 
-		token := new(oauth2.Token)
-		token.AccessToken = accessToken.(string)
-		token.RefreshToken = session.Values[REFRESH_TOKEN_KEY].(string)
-		token.TokenType = session.Values[TOKEN_TYPE_KEY].(string)
-		token.Expiry, err = time.Parse(time.RFC3339Nano, session.Values[EXPIRY_KEY].(string))
-		if err != nil {
-			mw.logger.Fatalf("Error parsing time: %v", err)
-			http.Redirect(rw, r, "/", http.StatusInternalServerError)
-			return
-		}
+		ts, _ := time.Parse(time.RFC3339Nano, session.Values[EXPIRY_KEY].(string))
+		ex := timestamppb.New(ts)
 
-		ctx := context.Background()
-		client := mw.config.Client(ctx, token)
+		tokenInfo := clientProto.TokenInfo{
+			AccessToken:  accessToken.(string),
+			RefreshToken: session.Values[REFRESH_TOKEN_KEY].(string),
+			TokenType:    session.Values[TOKEN_TYPE_KEY].(string),
+			Expiry:       ex}
 
-		handler(rw, r, client)
+		appCreds := clientProto.ApplicationCredentials{
+			ClientId:     CLIENT_ID,
+			ClientSecret: CLIENT_SECRET}
+
+		scoping := clientProto.Scoping{
+			Scopes: SCOPES}
+
+		url := clientProto.URL{
+			RedirectUrl: REDIRECT_URL}
+
+		clientInfo := clientProto.ClientInfo{
+			TokenInfo:      &tokenInfo,
+			AppCredentials: &appCreds,
+			AppScopes:      &scoping,
+			Urls:           &url}
+
+		handler(rw, r, &clientInfo)
 
 		return
 
@@ -118,7 +133,7 @@ func (mw *Middleware) RedirectCallback(rw http.ResponseWriter, r *http.Request) 
 
 	// Extract google code
 	code := r.FormValue("code")
-	mw.logger.Printf("Code %v: \n", code)
+
 	if code == "" {
 		mw.logger.Fatal("Code not found...")
 		rw.Write([]byte("Code Not Found to provide AccessToken..\n"))
