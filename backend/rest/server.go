@@ -61,7 +61,7 @@ func main() {
 	// POST SUBROUTER
 	//postRouter := serveMux.Methods(http.MethodPost).Subrouter()
 	//route for listing photos in an album - optional params {pageSize | pageToken}
-	getRouter.HandleFunc("/photos/album/{albumId:[-_0-9A-Za-z]+}", mWare.Authorized(gClient.ListPicturesFromAlbum))
+	getRouter.HandleFunc("/photos/album/{albumId:[-_0-9A-Za-z]+}", mWare.Authorized(pCaller.PhotosFromAlbumCallWithError(gClient.ListPhotosFromAlbum)))
 
 	// Configure the server {TODO: move these to an external configurable file/location}
 	server := &http.Server{

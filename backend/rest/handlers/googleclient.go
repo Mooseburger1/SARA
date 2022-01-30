@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -10,7 +9,6 @@ import (
 
 	"log"
 
-	clientProto "backend/grpc/proto/api/client"
 	photosProto "backend/grpc/proto/api/photos"
 
 	"github.com/gorilla/mux"
@@ -38,81 +36,16 @@ func (gc *GoogleClient) ListAlbums(rw http.ResponseWriter, r *http.Request, ai *
 	if err != nil {
 		gc.logger.Printf("Unable to marshal: %v", err)
 	}
-
 	rw.Write(JSON)
-
 }
 
-func (gc *GoogleClient) ListPicturesFromAlbum(rw http.ResponseWriter, r *http.Request, client *clientProto.ClientInfo) {
-	photoRequest := makePhotosFromAlbumRequest(r, client)
-	pc := *gc.photosClient
-	photos, err := pc.ListPhotosFromAlbum(context.Background(), photoRequest)
-	if err != nil {
-		panic(err)
-	}
+func (gc *GoogleClient) ListPhotosFromAlbum(rw http.ResponseWriter, r *http.Request, pi *photosProto.PhotosInfo) {
 
-	JSON, err := json.Marshal(photos)
+	JSON, err := json.Marshal(pi)
 	if err != nil {
 		gc.logger.Printf("Unable to marshal: %v", err)
 	}
-
 	rw.Write(JSON)
-}
-
-func makePhotosFromAlbumRequest(r *http.Request, ci *clientProto.ClientInfo) *photosProto.FromAlbumRequest {
-	vars := mux.Vars(r)
-	albumId := vars["albumId"]
-	pageToken := r.URL.Query().Get("pageToken")
-	pageSize := r.URL.Query().Get("pageSize")
-
-	var req photosProto.FromAlbumRequest
-	req.ClientInfo = ci
-	req.AlbumId = albumId
-
-	// Parse the pageSize Url variable
-	if pageSize != "" {
-		i, err := str2Int32(pageSize)
-		if err != nil {
-			panic(err)
-		}
-		req.PageSize = i
-	}
-
-	// Parse the pageToken URL variable
-	if pageToken != "" {
-		req.PageToken = pageToken
-	}
-	return &req
-}
-
-// makeAlbumListRequest is a package private helper function
-// utilized to extract variables from the API URL and generate
-// an AlbumListRequest proto. More specifically, it is a parser
-// for the REST endpoint of list-albums and constructs the necessary
-// RPC proto.
-func makeAlbumListRequest(r *http.Request, ci *clientProto.ClientInfo) *photosProto.AlbumListRequest {
-
-	pageToken := r.URL.Query().Get("pageToken")
-	pageSize := r.URL.Query().Get("pageSize")
-
-	var req photosProto.AlbumListRequest
-	req.ClientInfo = ci
-
-	// Parse the pageSize Url variable
-	if pageSize != "" {
-		i, err := str2Int32(pageSize)
-		if err != nil {
-			panic(err)
-		}
-		req.PageSize = i
-	}
-
-	// Parse the pageToken URL variable
-	if pageToken != "" {
-		req.PageToken = pageToken
-	}
-
-	return &req
 }
 
 // str2Int32 is a package private helper function

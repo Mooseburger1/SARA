@@ -7,6 +7,8 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 type rpcCaller func(http.ResponseWriter, *http.Request, *clientProto.ClientInfo)
@@ -28,7 +30,6 @@ func (rpc *photosRpcCaller) ListAlbumsCallWithError(handler func(http.ResponseWr
 		listRequest := makeAlbumListRequest(r, clientInfo)
 		pc := *rpc.photosClient
 		albums, err := pc.ListAlbums(context.Background(), listRequest)
-		rpc.logger.Printf("logging from rpc caller: %v", albums)
 		if err != nil {
 			panic(err)
 		}
@@ -36,9 +37,25 @@ func (rpc *photosRpcCaller) ListAlbumsCallWithError(handler func(http.ResponseWr
 			rw.Write([]byte(albums.FailedRequest))
 			return
 		}
-		rpc.logger.Println("Called into the proper middleware")
 		handler(rw, r, albums)
 
+	}
+}
+
+func (rpc *photosRpcCaller) PhotosFromAlbumCallWithError(handler func(http.ResponseWriter, *http.Request, *photosProto.PhotosInfo)) rpcCaller {
+	return func(rw http.ResponseWriter, r *http.Request, clientInfo *clientProto.ClientInfo) {
+		photoRequest := makePhotosFromAlbumRequest(r, clientInfo)
+		pc := *rpc.photosClient
+		photos, err := pc.ListPhotosFromAlbum(context.Background(), photoRequest)
+		if err != nil {
+			panic(err)
+		}
+
+		if photos.FailedRequest != nil {
+			rw.Write([]byte(photos.FailedRequest))
+			return
+		}
+		handler(rw, r, photos)
 	}
 }
 
@@ -81,4 +98,30 @@ func str2Int32(val string) (int32, error) {
 	}
 
 	return int32(i), nil
+}
+
+func makePhotosFromAlbumRequest(r *http.Request, ci *clientProto.ClientInfo) *photosProto.FromAlbumRequest {
+	vars := mux.Vars(r)
+	albumId := vars["albumId"]
+	pageToken := r.URL.Query().Get("pageToken")
+	pageSize := r.URL.Query().Get("pageSize")
+
+	var req photosProto.FromAlbumRequest
+	req.ClientInfo = ci
+	req.AlbumId = albumId
+
+	// Parse the pageSize Url variable
+	if pageSize != "" {
+		i, err := str2Int32(pageSize)
+		if err != nil {
+			panic(err)
+		}
+		req.PageSize = i
+	}
+
+	// Parse the pageToken URL variable
+	if pageToken != "" {
+		req.PageToken = pageToken
+	}
+	return &req
 }

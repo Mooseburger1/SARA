@@ -60,8 +60,7 @@ func listPhotosFromAlbum(rpc *photos.FromAlbumRequest, logger *log.Logger) (*pho
 
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-
-		logger.Printf("Call to List Albums returned status code %v, not %v", resp.StatusCode, http.StatusOK)
+		logger.Printf("Call to List Photos From Album returned status code %v, not %v", resp.StatusCode, http.StatusOK)
 		bodyBytes, err := io.ReadAll(resp.Body)
 
 		if err != nil {
