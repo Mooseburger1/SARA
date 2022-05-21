@@ -1,0 +1,2 @@
+# Authorization Middleware
+All REST  requests made to the REST server for Google specific endpoints should be routed through this middleware first. It checks the cache for any stored cookie sessions from prior authentications. If only an expired or no cache exists, the call will be rerouted to Google's OAuth sign in.

@@ -1,9 +1,14 @@
 package main
 
 import (
+	config "backend/configuration"
 	protos "backend/grpc/proto/api/photos"
 	"backend/rest/handlers"
-	"backend/rest/middleware"
+	gAuth "backend/rest/middleware/google/auth/OAuth"
+	callingCatchables "backend/rest/middleware/google/callingCatchables/photos"
+
+	gohandlers "github.com/gorilla/handlers"
+
 	"log"
 	"net/http"
 	"os"
@@ -19,6 +24,9 @@ import (
 func main() {
 	// Main logger
 	logger := log.New(os.Stdout, "rest-server", log.LstdFlags)
+
+	// Internal Configuration
+	config := config.NewGOAuthConfig()
 
 	// Initialize redis store
 	store, err := redistore.NewRediStore(10, "tcp", "redis-server:6379", "", []byte("secret-key"))
@@ -38,8 +46,12 @@ func main() {
 
 	/////// Initialize middleware and handlers here ///////
 	gClient := handlers.NewGoogleClient(logger)
-	mWare := middleware.NewMiddleWare(logger, store)
-	pCaller := middleware.NewPhotosRpcCaller(logger, &gpsc)
+	gAuthMware := gAuth.NewAuthMiddleware(logger, store, config)
+	gPhotos := callingCatchables.NewPhotosRpcCaller(logger, &gpsc)
+	//gPhotosCaller := catching.NewPhotosRpcCaller(logger, &gpsc)
+
+	// CORS Handler
+	corsHandler := gohandlers.CORS(gohandlers.AllowedOrigins([]string{"http://localhost:4200"}))
 
 	//Serve Mux to replace the default ServeMux
 	serveMux := mux.NewRouter()
@@ -47,26 +59,26 @@ func main() {
 	// GET SUBROUTER
 	getRouter := serveMux.Methods(http.MethodGet).Subrouter()
 	//getRouter.HandleFunc("/", )
-	getRouter.HandleFunc("/authenticate", mWare.Authenticate)
-	getRouter.HandleFunc("/oauth-callback", mWare.RedirectCallback)
+	getRouter.HandleFunc("/authenticate", gAuthMware.Authenticate)
+	getRouter.HandleFunc("/oauth-callback", gAuthMware.RedirectCallback)
 
 	//route for listing albums - optional params {pageSize | pageToken}
-	getRouter.HandleFunc("/photos/albumsList", mWare.Authorized(pCaller.ListAlbumsCallWithError(gClient.ListAlbums)))
+	getRouter.HandleFunc("/photos/albumsList", gAuthMware.Authorized(gPhotos.CatchableListAlbums(gClient.ListAlbums)))
 	getRouter.HandleFunc("/oh-no", gClient.OhNo)
 
 	// PUT SUBROUTER
 	putRouter := serveMux.Methods(http.MethodPut).Subrouter()
-	putRouter.HandleFunc("/", mWare.Authenticate)
+	putRouter.HandleFunc("/", gAuthMware.Authenticate)
 
 	// POST SUBROUTER
 	//postRouter := serveMux.Methods(http.MethodPost).Subrouter()
 	//route for listing photos in an album - optional params {pageSize | pageToken}
-	getRouter.HandleFunc("/photos/album/{albumId:[-_0-9A-Za-z]+}", mWare.Authorized(pCaller.PhotosFromAlbumCallWithError(gClient.ListPhotosFromAlbum)))
+	getRouter.HandleFunc("/photos/album/{albumId:[-_0-9A-Za-z]+}", gAuthMware.Authorized(gPhotos.CatchablePhotosFromAlbum(gClient.ListPhotosFromAlbum)))
 
 	// Configure the server {TODO: move these to an external configurable file/location}
 	server := &http.Server{
 		Addr:         ":9090",
-		Handler:      serveMux,
+		Handler:      corsHandler(serveMux),
 		IdleTimeout:  120 * time.Second,
 		ReadTimeout:  1 * time.Second,
 		WriteTimeout: 1 * time.Second,

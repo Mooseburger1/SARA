@@ -1,4 +1,7 @@
-FROM node:16.13.0 as build
+FROM node:latest
+
+RUN apt-get update && \
+      apt-get -y install sudo
 
 WORKDIR /usr/local/app
 
