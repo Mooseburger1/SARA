@@ -5,11 +5,14 @@ import (
 	photosProto "backend/grpc/proto/api/photos"
 	auth "backend/rest/middleware/google/auth/OAuth"
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // photosRpcCaller is the client responsible for making calls
@@ -29,7 +32,22 @@ type AlbumsHandlerFunc func(http.ResponseWriter, *http.Request, *photosProto.Alb
 // to the gRPC server for Google Photos and specifically for the PhotosInfo endpoint.
 type PhotosInfoHandlerFunc func(http.ResponseWriter, *http.Request, *photosProto.PhotosInfo)
 
-// NewPhotosRpcCaller is a builder for a photosRpcCaller client. Will create a new instance
+func route404Error(st *status.Status, rw http.ResponseWriter) {
+	rw.WriteHeader(http.StatusNotFound)
+	rw.Header().Set("Content-Type", "application/json")
+	encoder := json.NewEncoder(rw)
+	er := encoder.Encode(struct {
+		Error   codes.Code    `json:"error"`
+		Details []interface{} `json:"code"`
+	}{Error: st.Code(),
+		Details: st.Details()})
+
+	if er != nil {
+		panic(er)
+	}
+}
+
+// NewPhotosRpcCaller is a builder for a photosRpcCaller client. It will create a new instance
 // with each invocation. Does not follow the singleton pattern.
 func NewPhotosRpcCaller(logger *log.Logger, pc *photosProto.GooglePhotoServiceClient) *photosRpcCaller {
 	return &photosRpcCaller{
@@ -44,10 +62,8 @@ func (rpc *photosRpcCaller) CatchableListAlbums(handler AlbumsHandlerFunc) auth.
 		pc := *rpc.photosClient
 		albums, err := pc.ListAlbums(context.Background(), listRequest)
 		if err != nil {
-			panic(err)
-		}
-		if albums.FailedRequest != nil {
-			rw.Write([]byte(albums.FailedRequest))
+			st := status.Convert(err)
+			route404Error(st, rw)
 			return
 		}
 		handler(rw, r, albums)
@@ -61,11 +77,8 @@ func (rpc *photosRpcCaller) CatchablePhotosFromAlbum(handler PhotosInfoHandlerFu
 		pc := *rpc.photosClient
 		photos, err := pc.ListPhotosFromAlbum(context.Background(), photoRequest)
 		if err != nil {
-			panic(err)
-		}
-
-		if photos.FailedRequest != nil {
-			rw.Write([]byte(photos.FailedRequest))
+			st := status.Convert(err)
+			route404Error(st, rw)
 			return
 		}
 		handler(rw, r, photos)

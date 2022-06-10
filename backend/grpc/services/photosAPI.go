@@ -15,6 +15,9 @@ import (
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -37,17 +40,18 @@ func (pe *PhotosAPICallError) Error() string {
 // which returns all photos for a specified album. The response is unmarshaled
 // and converted into an PhotosInfo protobuf
 func listPhotosFromAlbum(rpc *photos.FromAlbumRequest, logger *log.Logger) (*photos.PhotosInfo, error) {
-	clientInfo := rpc.GetClientInfo()
-	client, err := createClient(clientInfo)
+	client, err := createClient(rpc.GetClientInfo())
 	if err != nil {
 		logger.Printf("Error creating client: %v", err)
+		st := createClientCreationError(err)
+		return nil, st.Err()
 	}
 
 	requestBody := []byte(fmt.Sprintf(`{"albumId":"%v", "pageSize":"%v", "pageToken":"%v"}`, rpc.GetAlbumId(), rpc.GetPageSize(), rpc.GetPageToken()))
 
 	req, err := http.NewRequest(POST, PHOTOS_ENDPOINT, bytes.NewBuffer(requestBody))
 	if err != nil {
-		logger.Printf("Error creating new request: %v", err)
+		panic(err)
 	}
 
 	req.Header.Set("Accept", "application/json")
@@ -66,7 +70,8 @@ func listPhotosFromAlbum(rpc *photos.FromAlbumRequest, logger *log.Logger) (*pho
 		if err != nil {
 			panic(err)
 		}
-		return &photos.PhotosInfo{FailedRequest: bodyBytes}, nil
+		st := createErrorResponseError(resp.StatusCode, bodyBytes)
+		return &photos.PhotosInfo{}, st.Err()
 	}
 	result := photosFromAlbumDecoder(resp.Body)
 
@@ -81,11 +86,13 @@ func listAlbums(rpc *photos.AlbumListRequest, logger *log.Logger) (*photos.Album
 	client, err := createClient(rpc.GetClientInfo())
 	if err != nil {
 		logger.Printf("Error creating client: %v", err)
+		st := createClientCreationError(err)
+		return nil, st.Err()
 	}
 
 	req, err := http.NewRequest(GET, ALBUMS_ENDPOINT, nil)
 	if err != nil {
-		logger.Printf("Error creating new request: %v", err)
+		panic(err)
 	}
 
 	query := req.URL.Query()
@@ -107,13 +114,42 @@ func listAlbums(rpc *photos.AlbumListRequest, logger *log.Logger) (*photos.Album
 		if err != nil {
 			panic(err)
 		}
-		return &photos.AlbumsInfo{FailedRequest: bodyBytes}, nil
+		st := createErrorResponseError(resp.StatusCode, bodyBytes)
+		return nil, st.Err()
 	}
 
 	result := albumListDecoder(resp.Body)
 
 	return albumsPogo2Proto(&result), nil
 
+}
+
+func createClientCreationError(err error) *status.Status {
+	st := status.New(codes.InvalidArgument, "Client creation error")
+	desc := fmt.Sprintf("Error creating client for making REST calls to Google Photos RESTServer: %s", err)
+	v := &errdetails.ErrorInfo{Reason: desc}
+	st, err = st.WithDetails(v)
+	if err != nil {
+		// If this errored, it will always error
+		// here, so better panic so we can figure
+		// out why than have this silently passing.
+		panic(fmt.Sprintf("Unexpected error attaching metadata: %v", err))
+	}
+	return st
+}
+
+func createErrorResponseError(statusCode int, response []byte) *status.Status {
+	desc := fmt.Sprintf("Google Photos REST server responded with a non 200 error code: %d: %s", statusCode, response)
+	st := status.New(codes.InvalidArgument, desc)
+	v := &errdetails.ErrorInfo{Reason: desc}
+	st, err := st.WithDetails(v)
+	if err != nil {
+		// If this errored, it will always error
+		// here, so better panic so we can figure
+		// out why than have this silently passing.
+		panic(fmt.Sprintf("Unexpected error attaching metadata: %v", err))
+	}
+	return st
 }
 
 func photosFromAlbumDecoder(body io.ReadCloser) POGO.PhotosInfoPOGO {

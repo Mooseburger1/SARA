@@ -1,12 +1,12 @@
 package auth
 
 import (
-	internal "backend/configuration"
+	backendConfig "backend/configuration"
 	clientProto "backend/grpc/proto/api/client"
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
-	"text/template"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -25,28 +25,37 @@ const (
 )
 
 //ClientHandlerFunc is an amended http.HandlerFunc that takes in the typical params of
-//a http.HandlerFunc plus a *ClientInfo proto
+//a http.HandlerFunc plus a *ClientInfo proto. It is the expected input handler for the
+// Google Oauth Middleware.
 type ClientHandlerFunc func(http.ResponseWriter, *http.Request, *clientProto.ClientInfo)
 
-//AuthMiddleware
+//AuthMiddleware manages the authentiation flow for any requests made to Google service
+//endpoints. Any requests not made from a valid session will be redirected to Google's
+//OAuth portal. Subsequent requests will be passed on to provided ClientHandlerFunc.
 type AuthMiddleware struct {
-	logger         *log.Logger
-	store          *redistore.RediStore
-	oauthconfig    *oauth2.Config
-	internalconfig *internal.GOAuthConfig
+	logger          *log.Logger
+	store           *redistore.RediStore
+	oauthconfig     *oauth2.Config
+	backendconfig   *backendConfig.GOAuthConfig
+	redirectHandler *ClientHandlerFunc
+	responseWriter  *http.ResponseWriter
+	request         *http.Request
 }
 
-// NewAuthMiddleware is a builder for the AuthMiddleware struct
-func NewAuthMiddleware(logger *log.Logger, store *redistore.RediStore, internalconfig *internal.GOAuthConfig) *AuthMiddleware {
+//NewAuthMiddleware is a builder for the AuthMiddleware struct
+func NewAuthMiddleware(logger *log.Logger, store *redistore.RediStore,
+	internalconfig *backendConfig.GOAuthConfig) *AuthMiddleware {
 	return &AuthMiddleware{
-		logger:         logger,
-		store:          store,
-		oauthconfig:    ConfigBuilder(internalconfig),
-		internalconfig: internalconfig,
+		logger:        logger,
+		store:         store,
+		oauthconfig:   ConfigBuilder(internalconfig),
+		backendconfig: internalconfig,
 	}
 }
 
-func ConfigBuilder(internalConfig *internal.GOAuthConfig) *oauth2.Config {
+//ConfigBuilder receives server side configurations and builds expected Oauth
+//proto needed for verified Google API services requests
+func ConfigBuilder(internalConfig *backendConfig.GOAuthConfig) *oauth2.Config {
 	conf := &oauth2.Config{
 		ClientID:     internalConfig.ClientID,
 		ClientSecret: internalConfig.ClientSecret,
@@ -58,7 +67,8 @@ func ConfigBuilder(internalConfig *internal.GOAuthConfig) *oauth2.Config {
 	return conf
 }
 
-func (mw *AuthMiddleware) Authorized(clientHandler ClientHandlerFunc) http.HandlerFunc {
+func (mw *AuthMiddleware) IsAuthorized(clientHandler ClientHandlerFunc) http.HandlerFunc {
+	mw.clearRedirectHandler()
 	return func(rw http.ResponseWriter, r *http.Request) {
 		session, err := mw.store.Get(r, SESSION_KEY)
 		if err != nil {
@@ -67,38 +77,52 @@ func (mw *AuthMiddleware) Authorized(clientHandler ClientHandlerFunc) http.Handl
 
 		accessToken := session.Values[ACCESS_TOKEN_KEY]
 
+		mw.redirectHandler = &clientHandler
+		mw.responseWriter = &rw
+		mw.request = r
+
 		if accessToken == nil {
 			mw.Authenticate(rw, r)
 			return
 		}
 
 		ts, _ := time.Parse(time.RFC3339Nano, session.Values[EXPIRY_KEY].(string))
-		ex := timestamppb.New(ts)
+		protoTime := timestamppb.New(ts)
 
-		tokenInfo := clientProto.TokenInfo{
-			AccessToken:  accessToken.(string),
-			RefreshToken: session.Values[REFRESH_TOKEN_KEY].(string),
-			TokenType:    session.Values[TOKEN_TYPE_KEY].(string),
-			Expiry:       ex}
-
-		appCreds := clientProto.ApplicationCredentials{
-			ClientId:     mw.internalconfig.ClientID,
-			ClientSecret: mw.internalconfig.ClientSecret}
-
-		scoping := clientProto.Scoping{
-			Scopes: mw.internalconfig.Scopes}
-
-		url := clientProto.URL{
-			RedirectUrl: mw.internalconfig.RedirectUrl}
-
-		clientInfo := clientProto.ClientInfo{
-			TokenInfo:      &tokenInfo,
-			AppCredentials: &appCreds,
-			AppScopes:      &scoping,
-			Urls:           &url}
+		clientInfo := clientInfoBuilder(accessToken.(string),
+			session.Values[REFRESH_TOKEN_KEY].(string),
+			session.Values[TOKEN_TYPE_KEY].(string),
+			/* expiry= */ protoTime,
+			/* authMW= */ mw)
 
 		clientHandler(rw, r, &clientInfo)
 	}
+}
+
+func clientInfoBuilder(accessToken string, refreshToken string, tokenType string,
+	expiry *timestamppb.Timestamp, authMW *AuthMiddleware) clientProto.ClientInfo {
+	tokenInfo := clientProto.TokenInfo{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		TokenType:    tokenType,
+		Expiry:       expiry}
+
+	appCreds := clientProto.ApplicationCredentials{
+		ClientId:     authMW.backendconfig.ClientID,
+		ClientSecret: authMW.backendconfig.ClientSecret}
+
+	scoping := clientProto.Scoping{
+		Scopes: authMW.backendconfig.Scopes}
+
+	url := clientProto.URL{
+		RedirectUrl: authMW.backendconfig.RedirectUrl}
+
+	return clientProto.ClientInfo{
+		TokenInfo:      &tokenInfo,
+		AppCredentials: &appCreds,
+		AppScopes:      &scoping,
+		Urls:           &url}
+
 }
 
 // Authenticate routes user through Google's Oauth workflow. If the user has already
@@ -113,13 +137,16 @@ func (mw *AuthMiddleware) Authorized(clientHandler ClientHandlerFunc) http.Handl
 func (mw *AuthMiddleware) Authenticate(rw http.ResponseWriter, r *http.Request) {
 
 	url := mw.oauthconfig.AuthCodeURL("state", oauth2.AccessTypeOffline)
-	templ := template.Must(template.New("Oauth_Redirect").Parse(`
-	<h1>Visit the URL for the auth dialog: <a href={{.URL}}>Link</a></h1>`))
-
-	err := templ.Execute(rw, struct{ URL string }{URL: url})
+	rw.WriteHeader(http.StatusUnauthorized)
+	rw.Header().Set("Content-Type", "application/json")
+	encoder := json.NewEncoder(rw)
+	encoder.SetEscapeHTML(false)
+	err := encoder.Encode(struct {
+		Url string `json:"url"`
+	}{Url: url})
 
 	if err != nil {
-		http.Redirect(rw, r, "/", http.StatusBadRequest)
+		panic(err)
 	}
 }
 
@@ -132,38 +159,53 @@ func (mw *AuthMiddleware) RedirectCallback(rw http.ResponseWriter, r *http.Reque
 	code := r.FormValue("code")
 
 	if code == "" {
+		mw.clearRedirectHandler()
 		mw.logger.Fatal("Code not found...")
 		rw.Write([]byte("Code Not Found to provide AccessToken..\n"))
 		reason := r.FormValue("error_reason")
 		if reason == "user_denied" {
 			rw.Write([]byte("User has denied Permission.."))
 		}
-	} else {
-
-		// Utilize the code to generate an Acess Token
-		ctx := context.Background()
-		token, err := mw.oauthconfig.Exchange(ctx, code)
-		if err != nil {
-			mw.logger.Fatalf("Oauth Exchange Failed with %v\n", err)
-		}
-
-		// Generate a new session cookie
-		session, err := mw.store.Get(r, "session-key")
-		if err != nil {
-			mw.logger.Fatalf("Error getting session: %v\n", err)
-		}
-
-		// save tokens in session cookie
-		session.Values[ACCESS_TOKEN_KEY] = token.AccessToken
-		session.Values[TOKEN_TYPE_KEY] = token.TokenType
-		session.Values[REFRESH_TOKEN_KEY] = token.RefreshToken
-		session.Values[OAUTH_CODE_KEY] = code
-		session.Values[EXPIRY_KEY] = token.Expiry.Format(time.RFC3339Nano)
-
-		err = session.Save(r, rw)
-		if err != nil {
-			mw.logger.Printf("Error saving session & token: %v\n", err)
-		}
 		return
 	}
+	// Utilize the code to generate an Acess Token
+	ctx := context.Background()
+	token, err := mw.oauthconfig.Exchange(ctx, code)
+	if err != nil {
+		mw.clearRedirectHandler()
+		mw.logger.Fatalf("Oauth Exchange Failed with %v\n", err)
+	}
+
+	// Generate a new session cookie
+	session, err := mw.store.Get(r, "session-key")
+	if err != nil {
+		mw.clearRedirectHandler()
+		mw.logger.Fatalf("Error getting session: %v\n", err)
+	}
+
+	// save tokens in session cookie
+	session.Values[ACCESS_TOKEN_KEY] = token.AccessToken
+	session.Values[TOKEN_TYPE_KEY] = token.TokenType
+	session.Values[REFRESH_TOKEN_KEY] = token.RefreshToken
+	session.Values[OAUTH_CODE_KEY] = code
+	session.Values[EXPIRY_KEY] = token.Expiry.Format(time.RFC3339Nano)
+
+	err = session.Save(r, rw)
+	if err != nil {
+		mw.clearRedirectHandler()
+		mw.logger.Printf("Error saving session & token: %v\n", err)
+	}
+
+	mw.logger.Print("calling is Authorized")
+	callback := mw.IsAuthorized(*mw.redirectHandler)
+	callback(rw, r)
+}
+
+// clearRedirectHandler clears any stored clientHandler functions stored from previous
+// isAuthorized invocations. This information is only needed in event a call was made
+// from an unauthenticated client.
+func (mw *AuthMiddleware) clearRedirectHandler() {
+	mw.redirectHandler = nil
+	mw.responseWriter = nil
+	mw.request = nil
 }

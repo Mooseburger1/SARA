@@ -22,7 +22,8 @@ func NewGphotoServer(logger *log.Logger) *GphotoServer {
 // ListAlbums is a RPC service endpoint. It receives an AlbumListRequest
 // proto and returns an AlbumsInfo proto. Internally it makes an Oauth2
 // authorized REST request to the Google Photos API server for listing albums.
-func (g *GphotoServer) ListAlbums(ctx context.Context, rpc *photos.AlbumListRequest) (*photos.AlbumsInfo, error) {
+func (g *GphotoServer) ListAlbums(ctx context.Context,
+	rpc *photos.AlbumListRequest) (*photos.AlbumsInfo, error) {
 	return listAlbums(rpc, g.logger)
 
 }
@@ -31,6 +32,7 @@ func (g *GphotoServer) ListAlbums(ctx context.Context, rpc *photos.AlbumListRequ
 // FromAlbumRequest proto and returns a PhotosInfo proto. Internally
 // it makes an Oauth2 authorized rest request to the Google Photos API
 // server for listing photos from a specific album
-func (g *GphotoServer) ListPhotosFromAlbum(ctx context.Context, rpc *photos.FromAlbumRequest) (*photos.PhotosInfo, error) {
+func (g *GphotoServer) ListPhotosFromAlbum(ctx context.Context,
+	rpc *photos.FromAlbumRequest) (*photos.PhotosInfo, error) {
 	return listPhotosFromAlbum(rpc, g.logger)
 }

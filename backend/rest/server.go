@@ -63,7 +63,7 @@ func main() {
 	getRouter.HandleFunc("/oauth-callback", gAuthMware.RedirectCallback)
 
 	//route for listing albums - optional params {pageSize | pageToken}
-	getRouter.HandleFunc("/photos/albumsList", gAuthMware.Authorized(gPhotos.CatchableListAlbums(gClient.ListAlbums)))
+	getRouter.HandleFunc("/photos/albumsList", gAuthMware.IsAuthorized(gPhotos.CatchableListAlbums(gClient.ListAlbums)))
 	getRouter.HandleFunc("/oh-no", gClient.OhNo)
 
 	// PUT SUBROUTER
@@ -73,7 +73,7 @@ func main() {
 	// POST SUBROUTER
 	//postRouter := serveMux.Methods(http.MethodPost).Subrouter()
 	//route for listing photos in an album - optional params {pageSize | pageToken}
-	getRouter.HandleFunc("/photos/album/{albumId:[-_0-9A-Za-z]+}", gAuthMware.Authorized(gPhotos.CatchablePhotosFromAlbum(gClient.ListPhotosFromAlbum)))
+	getRouter.HandleFunc("/photos/album/{albumId:[-_0-9A-Za-z]+}", gAuthMware.IsAuthorized(gPhotos.CatchablePhotosFromAlbum(gClient.ListPhotosFromAlbum)))
 
 	// Configure the server {TODO: move these to an external configurable file/location}
 	server := &http.Server{
