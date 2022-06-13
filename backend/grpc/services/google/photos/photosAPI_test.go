@@ -1,4 +1,4 @@
-package services
+package photos
 
 import (
 	"backend/grpc/proto/api/POGO"
@@ -17,7 +17,7 @@ var mockAlbumInfo1 = POGO.AlbumInfo{
 	MediaItemsCount:       "456",
 	CoverPhotoBaseUrl:     "abc.com",
 	CoverPhotoMediaItemId: "xyz.gov"}
-var count, err = strconv.Atoi(mockAlbumInfo1.MediaItemsCount)
+var count, _ = strconv.Atoi(mockAlbumInfo1.MediaItemsCount)
 var mockProtoAlbumInfo1 = &photos.AlbumInfo{
 	Id:                    mockAlbumInfo1.Id,
 	Title:                 mockAlbumInfo1.Title,
@@ -64,7 +64,6 @@ var mockPROTO3 = photos.AlbumsInfo{
 var mockPOGO4 = POGO.AlbumsInfoPOGO{
 	AlbumsInfo: []POGO.AlbumInfo{}}
 var mockPROTO4 = photos.AlbumsInfo{}
-
 
 // MOCK 1
 var mockListAlbumResponseString = `{

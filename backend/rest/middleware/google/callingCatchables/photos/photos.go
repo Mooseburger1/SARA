@@ -32,21 +32,6 @@ type AlbumsHandlerFunc func(http.ResponseWriter, *http.Request, *photosProto.Alb
 // to the gRPC server for Google Photos and specifically for the PhotosInfo endpoint.
 type PhotosInfoHandlerFunc func(http.ResponseWriter, *http.Request, *photosProto.PhotosInfo)
 
-func route404Error(st *status.Status, rw http.ResponseWriter) {
-	rw.WriteHeader(http.StatusNotFound)
-	rw.Header().Set("Content-Type", "application/json")
-	encoder := json.NewEncoder(rw)
-	er := encoder.Encode(struct {
-		Error   codes.Code    `json:"error"`
-		Details []interface{} `json:"code"`
-	}{Error: st.Code(),
-		Details: st.Details()})
-
-	if er != nil {
-		panic(er)
-	}
-}
-
 // NewPhotosRpcCaller is a builder for a photosRpcCaller client. It will create a new instance
 // with each invocation. Does not follow the singleton pattern.
 func NewPhotosRpcCaller(logger *log.Logger, pc *photosProto.GooglePhotoServiceClient) *photosRpcCaller {
@@ -56,6 +41,9 @@ func NewPhotosRpcCaller(logger *log.Logger, pc *photosProto.GooglePhotoServiceCl
 	}
 }
 
+// CatchableListAlbums makes a request to the RPC server for the ListAlbums endpoint. A successful
+// request is propagated forward to the supplied AlbumsHandlerFunc. All errors will be caught and
+// the error will be returned to the client caller
 func (rpc *photosRpcCaller) CatchableListAlbums(handler AlbumsHandlerFunc) auth.ClientHandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request, clientInfo *clientProto.ClientInfo) {
 		listRequest := makeAlbumListRequest(r, clientInfo)
@@ -71,6 +59,9 @@ func (rpc *photosRpcCaller) CatchableListAlbums(handler AlbumsHandlerFunc) auth.
 	}
 }
 
+// CatchablePhotosFromAlbum makes a request to the RPC server for the PhotosFromAlbum endpoint. A
+// successful request is propagated forward to the supplied AlbumsHandlerFunc. All errors will be
+// caught and the error will be returned to the client caller
 func (rpc *photosRpcCaller) CatchablePhotosFromAlbum(handler PhotosInfoHandlerFunc) auth.ClientHandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request, clientInfo *clientProto.ClientInfo) {
 		photoRequest := makePhotosFromAlbumRequest(r, clientInfo)
@@ -150,4 +141,30 @@ func makePhotosFromAlbumRequest(r *http.Request, ci *clientProto.ClientInfo) *ph
 		req.PageToken = pageToken
 	}
 	return &req
+}
+
+func route404Error(st *status.Status, rw http.ResponseWriter) {
+	rw.WriteHeader(http.StatusNotFound)
+	rw.Header().Set("Content-Type", "application/json")
+
+	encoder := json.NewEncoder(rw)
+	er := encoder.Encode(struct {
+		RpcError  codes.Code `json:"rpc_error"`
+		HtmlError int        `json:"html_error"`
+		Details   string     `json:"code"`
+	}{HtmlError: rpcToHtmlError(st.Code()), RpcError: st.Code(),
+		Details: st.Message()})
+
+	if er != nil {
+		panic(er)
+	}
+}
+
+func rpcToHtmlError(code codes.Code) int {
+	switch code {
+	case 3:
+		return 400
+	default:
+		return 404
+	}
 }

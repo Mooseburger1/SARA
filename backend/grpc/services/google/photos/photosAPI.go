@@ -1,4 +1,4 @@
-package services
+package photos
 
 import (
 	"backend/grpc/proto/api/POGO"
@@ -139,17 +139,30 @@ func createClientCreationError(err error) *status.Status {
 }
 
 func createErrorResponseError(statusCode int, response []byte) *status.Status {
-	desc := fmt.Sprintf("Google Photos REST server responded with a non 200 error code: %d: %s", statusCode, response)
-	st := status.New(codes.InvalidArgument, desc)
-	v := &errdetails.ErrorInfo{Reason: desc}
-	st, err := st.WithDetails(v)
-	if err != nil {
-		// If this errored, it will always error
-		// here, so better panic so we can figure
-		// out why than have this silently passing.
-		panic(fmt.Sprintf("Unexpected error attaching metadata: %v", err))
+	var rpcErrCode codes.Code
+
+	var desc errResponse
+
+	json.Unmarshal(response, &desc)
+	switch statusCode {
+	case 400:
+		rpcErrCode = codes.InvalidArgument
+	default:
+		rpcErrCode = codes.InvalidArgument
 	}
+
+	st := status.New(rpcErrCode, desc.Error.Message)
+
 	return st
+}
+
+type errResponse struct {
+	Error errDetails `json:"error"`
+}
+
+type errDetails struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
 }
 
 func photosFromAlbumDecoder(body io.ReadCloser) POGO.PhotosInfoPOGO {

@@ -1,4 +1,4 @@
-package services
+package photos
 
 import (
 	"backend/grpc/proto/api/photos"

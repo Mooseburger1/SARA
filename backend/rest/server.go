@@ -3,7 +3,7 @@ package main
 import (
 	config "backend/configuration"
 	protos "backend/grpc/proto/api/photos"
-	"backend/rest/handlers"
+	photoshandlers "backend/rest/handlers/google/photos"
 	gAuth "backend/rest/middleware/google/auth/OAuth"
 	callingCatchables "backend/rest/middleware/google/callingCatchables/photos"
 
@@ -18,6 +18,7 @@ import (
 	"github.com/gorilla/mux"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"gopkg.in/boj/redistore.v1"
 )
 
@@ -37,7 +38,7 @@ func main() {
 	}
 
 	/////// Initialize GRPC connections
-	photoConn, err := grpc.Dial("grpc_backend:9091", grpc.WithInsecure())
+	photoConn, err := grpc.Dial("grpc_backend:9091", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		panic(err)
 	}
@@ -45,10 +46,9 @@ func main() {
 	gpsc := protos.NewGooglePhotoServiceClient(photoConn)
 
 	/////// Initialize middleware and handlers here ///////
-	gClient := handlers.NewGoogleClient(logger)
+	pHandler := photoshandlers.NewPhotoHandler(logger)
 	gAuthMware := gAuth.NewAuthMiddleware(logger, store, config)
 	gPhotos := callingCatchables.NewPhotosRpcCaller(logger, &gpsc)
-	//gPhotosCaller := catching.NewPhotosRpcCaller(logger, &gpsc)
 
 	// CORS Handler
 	corsHandler := gohandlers.CORS(gohandlers.AllowedOrigins([]string{"http://localhost:4200"}))
@@ -63,8 +63,8 @@ func main() {
 	getRouter.HandleFunc("/oauth-callback", gAuthMware.RedirectCallback)
 
 	//route for listing albums - optional params {pageSize | pageToken}
-	getRouter.HandleFunc("/photos/albumsList", gAuthMware.IsAuthorized(gPhotos.CatchableListAlbums(gClient.ListAlbums)))
-	getRouter.HandleFunc("/oh-no", gClient.OhNo)
+	getRouter.HandleFunc("/photos/albumsList", gAuthMware.IsAuthorized(gPhotos.CatchableListAlbums(pHandler.ListAlbums)))
+	getRouter.HandleFunc("/oh-no", pHandler.OhNo)
 
 	// PUT SUBROUTER
 	putRouter := serveMux.Methods(http.MethodPut).Subrouter()
@@ -73,7 +73,7 @@ func main() {
 	// POST SUBROUTER
 	//postRouter := serveMux.Methods(http.MethodPost).Subrouter()
 	//route for listing photos in an album - optional params {pageSize | pageToken}
-	getRouter.HandleFunc("/photos/album/{albumId:[-_0-9A-Za-z]+}", gAuthMware.IsAuthorized(gPhotos.CatchablePhotosFromAlbum(gClient.ListPhotosFromAlbum)))
+	getRouter.HandleFunc("/photos/album/{albumId:[-_0-9A-Za-z]+}", gAuthMware.IsAuthorized(gPhotos.CatchablePhotosFromAlbum(pHandler.ListPhotosFromAlbum)))
 
 	// Configure the server {TODO: move these to an external configurable file/location}
 	server := &http.Server{

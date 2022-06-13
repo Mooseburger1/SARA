@@ -196,7 +196,6 @@ func (mw *AuthMiddleware) RedirectCallback(rw http.ResponseWriter, r *http.Reque
 		mw.logger.Printf("Error saving session & token: %v\n", err)
 	}
 
-	mw.logger.Print("calling is Authorized")
 	callback := mw.IsAuthorized(*mw.redirectHandler)
 	callback(rw, r)
 }
