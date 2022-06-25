@@ -12,7 +12,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/signal"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -22,9 +21,20 @@ import (
 	"gopkg.in/boj/redistore.v1"
 )
 
-func main() {
+type PhotoServer struct {
+	server *http.Server
+	logger *log.Logger
+}
+
+func GetPhotoServer() *PhotoServer {
+	ps := PhotoServer{}
+	ps.initPhotosServer()
+	return &ps
+}
+
+func (ps *PhotoServer) initPhotosServer() {
 	// Main logger
-	logger := log.New(os.Stdout, "rest-server", log.LstdFlags)
+	ps.logger = log.New(os.Stdout, "rest-server-photos", log.LstdFlags)
 
 	// Internal Configuration
 	config := config.NewGOAuthConfig()
@@ -33,7 +43,7 @@ func main() {
 	store, err := redistore.NewRediStore(10, "tcp", "redis-server:6379", "", []byte("secret-key"))
 
 	if err != nil {
-		logger.Fatalf("Error processing redistore %v", err)
+		ps.logger.Fatalf("Error processing redistore %v", err)
 		return
 	}
 
@@ -46,9 +56,9 @@ func main() {
 	gpsc := protos.NewGooglePhotoServiceClient(photoConn)
 
 	/////// Initialize middleware and handlers here ///////
-	pHandler := photoshandlers.NewPhotoHandler(logger)
-	gAuthMware := gAuth.NewAuthMiddleware(logger, store, config)
-	gPhotos := callingCatchables.NewPhotosRpcCaller(logger, &gpsc)
+	pHandler := photoshandlers.NewPhotoHandler(ps.logger)
+	gAuthMware := gAuth.NewAuthMiddleware(ps.logger, store, config)
+	gPhotos := callingCatchables.NewPhotosRpcCaller(ps.logger, &gpsc)
 
 	// CORS Handler
 	corsHandler := gohandlers.CORS(gohandlers.AllowedOrigins([]string{"http://localhost:4200"}))
@@ -64,6 +74,10 @@ func main() {
 
 	//route for listing albums - optional params {pageSize | pageToken}
 	getRouter.HandleFunc("/photos/albumsList", gAuthMware.IsAuthorized(gPhotos.CatchableListAlbums(pHandler.ListAlbums)))
+
+	//route for listing photos in an album - optional params {pageSize | pageToken}
+	getRouter.HandleFunc("/photos/album/{albumId:[-_0-9A-Za-z]+}", gAuthMware.IsAuthorized(gPhotos.CatchablePhotosFromAlbum(pHandler.ListPhotosFromAlbum)))
+
 	getRouter.HandleFunc("/oh-no", pHandler.OhNo)
 
 	// PUT SUBROUTER
@@ -72,8 +86,6 @@ func main() {
 
 	// POST SUBROUTER
 	//postRouter := serveMux.Methods(http.MethodPost).Subrouter()
-	//route for listing photos in an album - optional params {pageSize | pageToken}
-	getRouter.HandleFunc("/photos/album/{albumId:[-_0-9A-Za-z]+}", gAuthMware.IsAuthorized(gPhotos.CatchablePhotosFromAlbum(pHandler.ListPhotosFromAlbum)))
 
 	// Configure the server {TODO: move these to an external configurable file/location}
 	server := &http.Server{
@@ -84,24 +96,40 @@ func main() {
 		WriteTimeout: 1 * time.Second,
 	}
 
-	// Asynchronously expose the server
-	go func() {
-		err := server.ListenAndServe()
-		if err != nil {
-			logger.Fatal(err)
-		}
-	}()
+	ps.server = server
 
-	sigChan := make(chan os.Signal)
-	signal.Notify(sigChan, os.Interrupt)
-	signal.Notify(sigChan, os.Kill)
+	// // Asynchronously expose the server
+	// go func() {
+	// 	err := server.ListenAndServe()
+	// 	if err != nil {
+	// 		ps.logger.Fatal(err)
+	// 	}
+	// }()
 
-	//Block while not receiving forecfull shutdown
-	sig := <-sigChan
+	// sigChan := make(chan os.Signal)
+	// signal.Notify(sigChan, os.Interrupt)
+	// signal.Notify(sigChan, os.Kill)
 
-	logger.Println("Received terminate, graceful shutdown", sig)
+	// //Block while not receiving forecfull shutdown
+	// sig := <-sigChan
 
-	//Define context to provide server on how to shutdown all running processes
-	tc, _ := context.WithTimeout(context.Background(), 30*time.Second)
-	server.Shutdown(tc)
+	// ps.logger.Println("Received terminate, graceful shutdown", sig)
+
+	// //Define context to provide server on how to shutdown all running processes
+	// tc, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	// server.Shutdown(tc)
+}
+
+func (ps *PhotoServer) StartServer() {
+	err := ps.server.ListenAndServe()
+	if err != nil {
+		ps.logger.Fatal(err)
+	}
+}
+
+func (ps *PhotoServer) ShutdownServer(tc context.Context) {
+	err := ps.server.Shutdown(tc)
+	if err != nil {
+		ps.logger.Fatal(err)
+	}
 }
