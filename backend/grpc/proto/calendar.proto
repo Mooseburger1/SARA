@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+import "client.proto";
+
+option go_package = "backend/grpc/proto/api/calendar";
+
+service GoogleCalendarService {
+    rpc ListCalendars(CalendarListRequest) returns (CalendarsInfo);
+}
+
+message CalendarListRequest {
+    ClientInfo client_info = 1;
+    int32 max_results =2;
+    string page_token = 3;
+    bool show_deleted = 4;
+    bool show_hidden = 5;
+    string sync_token = 6;
+}
