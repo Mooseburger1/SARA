@@ -1,0 +1,1 @@
+callingCatchables are Middleware design to make calls to the RPC servers. In the event of failed RPC requests, they should catch the failure gracefully and propagte in an expected manner. All successful requests should be propagated forward to successful handlers.

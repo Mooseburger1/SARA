@@ -2,7 +2,7 @@ package main
 
 import (
 	protoPhotos "backend/grpc/proto/api/photos"
-	rpc "backend/grpc/services"
+	photos "backend/grpc/services/google/photos"
 	"log"
 	"net"
 	"os"
@@ -16,7 +16,7 @@ func main() {
 	logger := log.New(os.Stdout, "rpc-server", log.LstdFlags)
 
 	grpcServer := grpc.NewServer()
-	photoServer := rpc.NewGphotoServer(logger)
+	photoServer := photos.NewGphotoServer(logger)
 
 	protoPhotos.RegisterGooglePhotoServiceServer(grpcServer, photoServer)
 
