@@ -5,7 +5,7 @@ import "client.proto";
 option go_package = "backend/grpc/proto/api/calendar";
 
 service GoogleCalendarService {
-    rpc ListCalendars(CalendarListRequest) returns (CalendarsInfo);
+    rpc ListCalendarList(CalendarListRequest) returns (CalendarListResponse);
 }
 
 message CalendarListRequest {
@@ -15,4 +15,42 @@ message CalendarListRequest {
     bool show_deleted = 4;
     bool show_hidden = 5;
     string sync_token = 6;
+}
+
+message CalendarListResponse {
+    string next_page_token = 1;
+    string next_sync_token = 2;
+    repeated CalendarList items =3;
+}
+
+message CalendarList {
+    string id = 1;
+    string summary = 2;
+    string description = 3;
+    string location = 4;
+    string timezone = 5;
+    string color_id = 6;
+    string background_color = 7;
+    string foreground_color = 8;
+    bool hidden = 9;
+    bool selected = 10;
+    string access_role = 11;
+    repeated Reminders default_reminders = 12;
+    NotificationSettings notification_settings = 13;
+    bool primary = 14;
+    bool deleted = 15;
+}
+
+message Reminders {
+    string method = 1;
+    int64 minutes = 2;
+}
+
+message NotificationSettings {
+    repeated Notifications notifications = 1;
+
+    message Notifications {
+        string type = 1;
+        string method = 2;
+    }
 }
