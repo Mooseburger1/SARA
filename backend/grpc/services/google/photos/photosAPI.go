@@ -2,22 +2,15 @@ package photos
 
 import (
 	"backend/grpc/proto/api/POGO"
-	"backend/grpc/proto/api/client"
 	"backend/grpc/proto/api/photos"
+	"backend/grpc/services/google/utils"
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"strconv"
-
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
-	"google.golang.org/genproto/googleapis/rpc/errdetails"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 const (
@@ -40,10 +33,10 @@ func (pe *PhotosAPICallError) Error() string {
 // which returns all photos for a specified album. The response is unmarshaled
 // and converted into an PhotosInfo protobuf
 func listPhotosFromAlbum(rpc *photos.FromAlbumRequest, logger *log.Logger) (*photos.PhotosInfo, error) {
-	client, err := createClient(rpc.GetClientInfo())
+	client, err := utils.CreateClient(rpc.GetClientInfo())
 	if err != nil {
 		logger.Printf("Error creating client: %v", err)
-		st := createClientCreationError(err)
+		st := utils.CreateClientCreationError(err)
 		return nil, st.Err()
 	}
 
@@ -70,7 +63,7 @@ func listPhotosFromAlbum(rpc *photos.FromAlbumRequest, logger *log.Logger) (*pho
 		if err != nil {
 			panic(err)
 		}
-		st := createErrorResponseError(resp.StatusCode, bodyBytes)
+		st := utils.CreateErrorResponseError(resp.StatusCode, bodyBytes)
 		return &photos.PhotosInfo{}, st.Err()
 	}
 	result := photosFromAlbumDecoder(resp.Body)
@@ -83,10 +76,10 @@ func listPhotosFromAlbum(rpc *photos.FromAlbumRequest, logger *log.Logger) (*pho
 // http request to the google photos API server. The response
 // is unmarshalled and converted into an AlbumsInfo protobuf
 func listAlbums(rpc *photos.AlbumListRequest, logger *log.Logger) (*photos.AlbumsInfo, error) {
-	client, err := createClient(rpc.GetClientInfo())
+	client, err := utils.CreateClient(rpc.GetClientInfo())
 	if err != nil {
 		logger.Printf("Error creating client: %v", err)
-		st := createClientCreationError(err)
+		st := utils.CreateClientCreationError(err)
 		return nil, st.Err()
 	}
 
@@ -114,7 +107,7 @@ func listAlbums(rpc *photos.AlbumListRequest, logger *log.Logger) (*photos.Album
 		if err != nil {
 			panic(err)
 		}
-		st := createErrorResponseError(resp.StatusCode, bodyBytes)
+		st := utils.CreateErrorResponseError(resp.StatusCode, bodyBytes)
 		return nil, st.Err()
 	}
 
@@ -122,47 +115,6 @@ func listAlbums(rpc *photos.AlbumListRequest, logger *log.Logger) (*photos.Album
 
 	return albumsPogo2Proto(&result), nil
 
-}
-
-func createClientCreationError(err error) *status.Status {
-	st := status.New(codes.InvalidArgument, "Client creation error")
-	desc := fmt.Sprintf("Error creating client for making REST calls to Google Photos RESTServer: %s", err)
-	v := &errdetails.ErrorInfo{Reason: desc}
-	st, err = st.WithDetails(v)
-	if err != nil {
-		// If this errored, it will always error
-		// here, so better panic so we can figure
-		// out why than have this silently passing.
-		panic(fmt.Sprintf("Unexpected error attaching metadata: %v", err))
-	}
-	return st
-}
-
-func createErrorResponseError(statusCode int, response []byte) *status.Status {
-	var rpcErrCode codes.Code
-
-	var desc errResponse
-
-	json.Unmarshal(response, &desc)
-	switch statusCode {
-	case 400:
-		rpcErrCode = codes.InvalidArgument
-	default:
-		rpcErrCode = codes.InvalidArgument
-	}
-
-	st := status.New(rpcErrCode, desc.Error.Message)
-
-	return st
-}
-
-type errResponse struct {
-	Error errDetails `json:"error"`
-}
-
-type errDetails struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
 }
 
 func photosFromAlbumDecoder(body io.ReadCloser) POGO.PhotosInfoPOGO {
@@ -226,35 +178,4 @@ func albumsPogo2Proto(result *POGO.AlbumsInfoPOGO) *photos.AlbumsInfo {
 	}
 
 	return &photos.AlbumsInfo{AlbumsInfo: slices, NextPageToken: result.NextPageToken}
-}
-
-// createClient is a package private function utilized
-// to create an http client that has Google API
-// oauth2 credentials bounded to it. It is utilized
-// to make oauth2 verified REST requests to the Google
-// Photos API server
-func createClient(info *client.ClientInfo) (*http.Client, error) {
-	token := new(oauth2.Token)
-	token.AccessToken = info.GetTokenInfo().GetAccessToken()
-	token.RefreshToken = info.GetTokenInfo().GetRefreshToken()
-	token.TokenType = info.GetTokenInfo().GetTokenType()
-	token.Expiry = info.GetTokenInfo().GetExpiry().AsTime()
-
-	ctx := context.Background()
-	client := configBuilder(info).Client(ctx, token)
-
-	return client, nil
-}
-
-// configBuilder configures the server with the
-// application registered credentials on Google's
-// API developers dashboard.
-func configBuilder(info *client.ClientInfo) *oauth2.Config {
-	return &oauth2.Config{
-		ClientID:     info.GetAppCredentials().GetClientId(),
-		ClientSecret: info.GetAppCredentials().GetClientSecret(),
-		RedirectURL:  info.GetUrls().GetRedirectUrl(),
-		Scopes:       info.GetAppScopes().GetScopes(),
-		Endpoint:     google.Endpoint,
-	}
 }

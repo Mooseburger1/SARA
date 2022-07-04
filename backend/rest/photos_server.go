@@ -1,7 +1,6 @@
 package main
 
 import (
-	config "backend/configuration"
 	protos "backend/grpc/proto/api/photos"
 	photoshandlers "backend/rest/handlers/google/photos"
 	gAuth "backend/rest/middleware/google/auth/OAuth"
@@ -18,7 +17,6 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"gopkg.in/boj/redistore.v1"
 )
 
 type PhotoServer struct {
@@ -36,28 +34,17 @@ func (ps *PhotoServer) initPhotosServer() {
 	// Main logger
 	ps.logger = log.New(os.Stdout, "rest-server-photos", log.LstdFlags)
 
-	// Internal Configuration
-	config := config.NewGOAuthConfig()
-
-	// Initialize redis store
-	store, err := redistore.NewRediStore(10, "tcp", "redis-server:6379", "", []byte("secret-key"))
-
-	if err != nil {
-		ps.logger.Fatalf("Error processing redistore %v", err)
-		return
-	}
-
 	/////// Initialize GRPC connections
 	photoConn, err := grpc.Dial("grpc_backend:9091", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		panic(err)
 	}
-	defer photoConn.Close()
+	//defer photoConn.Close()
 	gpsc := protos.NewGooglePhotoServiceClient(photoConn)
 
 	/////// Initialize middleware and handlers here ///////
 	pHandler := photoshandlers.NewPhotoHandler(ps.logger)
-	gAuthMware := gAuth.NewAuthMiddleware(ps.logger, store, config)
+	gAuthMware := gAuth.GetAuthMiddleware()
 	gPhotos := callingCatchables.NewPhotosRpcCaller(ps.logger, &gpsc)
 
 	// CORS Handler
@@ -97,27 +84,6 @@ func (ps *PhotoServer) initPhotosServer() {
 	}
 
 	ps.server = server
-
-	// // Asynchronously expose the server
-	// go func() {
-	// 	err := server.ListenAndServe()
-	// 	if err != nil {
-	// 		ps.logger.Fatal(err)
-	// 	}
-	// }()
-
-	// sigChan := make(chan os.Signal)
-	// signal.Notify(sigChan, os.Interrupt)
-	// signal.Notify(sigChan, os.Kill)
-
-	// //Block while not receiving forecfull shutdown
-	// sig := <-sigChan
-
-	// ps.logger.Println("Received terminate, graceful shutdown", sig)
-
-	// //Define context to provide server on how to shutdown all running processes
-	// tc, _ := context.WithTimeout(context.Background(), 30*time.Second)
-	// server.Shutdown(tc)
 }
 
 func (ps *PhotoServer) StartServer() {

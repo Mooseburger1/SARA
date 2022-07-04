@@ -10,10 +10,12 @@ services:
     container_name: 'rest_backend'
     depends_on:
       - redis-server
+      - grpc-backend
     stdin_open: true
     tty: true
     ports:
       - "9090:9090"
+      - "9092:9092"
     environment:
       - GOOGLE_API_ID=${GOOGLE_API_ID}
       - GOOGLE_API_SECRET=${GOOGLE_API_SECRET}
