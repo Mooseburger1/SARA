@@ -14,6 +14,9 @@ func NewGOAuthConfig() *GOAuthConfig {
 		RedirectUrl:  "http://localhost:9090/oauth-callback",
 		ClientID:     os.Getenv("GOOGLE_API_ID"),
 		ClientSecret: os.Getenv("GOOGLE_API_SECRET"),
-		Scopes:       []string{"https://www.googleapis.com/auth/photoslibrary.readonly"},
+		Scopes: []string{"https://www.googleapis.com/auth/photoslibrary.readonly",
+			"https://www.googleapis.com/auth/calendar.readonly",
+			"https://www.googleapis.com/auth/calendar.events.readonly",
+		},
 	}
 }

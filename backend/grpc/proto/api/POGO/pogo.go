@@ -126,3 +126,41 @@ type PhotosInfo struct {
 	MimeType   string `json:"mimeType"`
 	Filename   string `json:"filename"`
 }
+
+type CalendarListResponse struct {
+	NextPageToken string         `json:"nextPageToken"`
+	NextSyncToken string         `json:"nextSyncToken"`
+	Items         []CalendarList `json:"items"`
+}
+
+type CalendarList struct {
+	Id                   string              `json:"id"`
+	Summary              string              `json:"summary"`
+	Description          string              `json:"description"`
+	Location             string              `json:"location"`
+	Timezone             string              `json:"timezone"`
+	ColorId              string              `json:"colorId"`
+	BackgroundColor      string              `json:"backgroundColor"`
+	ForegroundColor      string              `json:"foregroundColor"`
+	Hidden               bool                `json:"hidden"`
+	Selected             bool                `json:"selected"`
+	AccessRole           string              `json:"accessRole"`
+	DefaultReminders     []Reminders         `json:"defaultReminders"`
+	NotificationSettings NotificationSetting `json:"notificationSettings"`
+	Primary              bool                `json:"primary"`
+	Deleted              bool                `json:"deleted"`
+}
+
+type Reminders struct {
+	Method  string `json:"method"`
+	Minutes int    `json:"minutes"`
+}
+
+type NotificationSetting struct {
+	Notifications []Notification `json:"notifications"`
+}
+
+type Notification struct {
+	Type   string `json:"type"`
+	Method string `json:"method"`
+}

@@ -1,10 +1,10 @@
 package main
 
 import (
+	utils "backend/utils"
 	"context"
 	"log"
 	"os"
-	"os/signal"
 	"time"
 )
 
@@ -18,16 +18,13 @@ func main() {
 	runServers(photoServer,
 		calendarServer)
 
-	sigChan := make(chan os.Signal)
-	signal.Notify(sigChan, os.Interrupt)
-	signal.Notify(sigChan, os.Kill)
+	sigChan := utils.GetOsKillerListener()
 
-	sig := <-sigChan
+	sig := <-*sigChan
 
 	logger.Println("Received terminate, graceful shutdown", sig)
 
-	shutdownServers(photoServer)
-	//shutdownServers(photoServer, calendarServer)
+	shutdownServers(photoServer, calendarServer)
 
 }
 

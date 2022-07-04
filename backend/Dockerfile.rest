@@ -8,6 +8,8 @@ COPY . /app
 
 EXPOSE 9090
 
+EXPOSE 9092
+
 WORKDIR /app/rest
 
 RUN go build

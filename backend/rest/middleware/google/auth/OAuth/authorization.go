@@ -2,11 +2,14 @@ package auth
 
 import (
 	backendConfig "backend/configuration"
+	config "backend/configuration"
 	clientProto "backend/grpc/proto/api/client"
+	common "backend/utils"
 	"context"
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -42,15 +45,23 @@ type AuthMiddleware struct {
 	request         *http.Request
 }
 
+var INSTANCE *AuthMiddleware
+
 //NewAuthMiddleware is a builder for the AuthMiddleware struct
-func NewAuthMiddleware(logger *log.Logger, store *redistore.RediStore,
-	internalconfig *backendConfig.GOAuthConfig) *AuthMiddleware {
-	return &AuthMiddleware{
-		logger:        logger,
-		store:         store,
-		oauthconfig:   ConfigBuilder(internalconfig),
-		backendconfig: internalconfig,
+func GetAuthMiddleware() *AuthMiddleware {
+	logger := log.New(os.Stdout, "authorization-middleware", log.LstdFlags)
+
+	if INSTANCE == nil {
+		config := config.NewGOAuthConfig()
+		INSTANCE = &AuthMiddleware{
+			logger:        logger,
+			store:         common.GetDefaultRedisInstance(),
+			oauthconfig:   ConfigBuilder(config),
+			backendconfig: config,
+		}
+		return INSTANCE
 	}
+	return INSTANCE
 }
 
 //ConfigBuilder receives server side configurations and builds expected Oauth
@@ -173,7 +184,6 @@ func (mw *AuthMiddleware) RedirectCallback(rw http.ResponseWriter, r *http.Reque
 	token, err := mw.oauthconfig.Exchange(ctx, code)
 	if err != nil {
 		mw.clearRedirectHandler()
-		mw.logger.Fatalf("Oauth Exchange Failed with %v\n", err)
 	}
 
 	// Generate a new session cookie
