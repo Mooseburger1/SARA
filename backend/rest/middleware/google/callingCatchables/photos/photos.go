@@ -17,7 +17,7 @@ import (
 // to the gRPC server for the Google Photos endpoints. Successful
 // calls will be propogated to the injected handlers. Failed RPC
 // calls will be caught and handled gracefully.
-type photosRpcCaller struct {
+type PhotosRpcCaller struct {
 	logger       *log.Logger
 	photosClient *photosProto.GooglePhotoServiceClient
 }
@@ -32,8 +32,8 @@ type PhotosInfoHandlerFunc func(http.ResponseWriter, *http.Request, *photosProto
 
 // NewPhotosRpcCaller is a builder for a photosRpcCaller client. It will create a new instance
 // with each invocation. Does not follow the singleton pattern.
-func NewPhotosRpcCaller(logger *log.Logger, pc *photosProto.GooglePhotoServiceClient) *photosRpcCaller {
-	return &photosRpcCaller{
+func NewPhotosRpcCaller(logger *log.Logger, pc *photosProto.GooglePhotoServiceClient) *PhotosRpcCaller {
+	return &PhotosRpcCaller{
 		logger:       logger,
 		photosClient: pc,
 	}
@@ -42,7 +42,7 @@ func NewPhotosRpcCaller(logger *log.Logger, pc *photosProto.GooglePhotoServiceCl
 // CatchableListAlbums makes a request to the RPC server for the ListAlbums endpoint. A successful
 // request is propagated forward to the supplied AlbumsHandlerFunc. All errors will be caught and
 // the error will be returned to the client caller
-func (rpc *photosRpcCaller) CatchableListAlbums(handler AlbumsHandlerFunc) auth.ClientHandlerFunc {
+func (rpc *PhotosRpcCaller) CatchableListAlbums(handler AlbumsHandlerFunc) auth.ClientHandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request, clientInfo *clientProto.ClientInfo) {
 		listRequest := makeAlbumListRequest(r, clientInfo)
 		pc := *rpc.photosClient
@@ -60,7 +60,7 @@ func (rpc *photosRpcCaller) CatchableListAlbums(handler AlbumsHandlerFunc) auth.
 // CatchablePhotosFromAlbum makes a request to the RPC server for the PhotosFromAlbum endpoint. A
 // successful request is propagated forward to the supplied AlbumsHandlerFunc. All errors will be
 // caught and the error will be returned to the client caller
-func (rpc *photosRpcCaller) CatchablePhotosFromAlbum(handler PhotosInfoHandlerFunc) auth.ClientHandlerFunc {
+func (rpc *PhotosRpcCaller) CatchablePhotosFromAlbum(handler PhotosInfoHandlerFunc) auth.ClientHandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request, clientInfo *clientProto.ClientInfo) {
 		photoRequest := makePhotosFromAlbumRequest(r, clientInfo)
 		pc := *rpc.photosClient

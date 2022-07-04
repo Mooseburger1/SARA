@@ -12,21 +12,21 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type calendarRpcCaller struct {
+type CalendarRpcCaller struct {
 	logger         *log.Logger
 	calendarClient *calendarProto.GoogleCalendarServiceClient
 }
 
 type CalendarListHandlerFunc func(http.ResponseWriter, *http.Request, *calendarProto.CalendarListResponse)
 
-func NewCalendarRpcCaller(logger *log.Logger, cc *calendarProto.GoogleCalendarServiceClient) *calendarRpcCaller {
-	return &calendarRpcCaller{
+func NewCalendarRpcCaller(logger *log.Logger, cc *calendarProto.GoogleCalendarServiceClient) *CalendarRpcCaller {
+	return &CalendarRpcCaller{
 		logger:         logger,
 		calendarClient: cc,
 	}
 }
 
-func (rpc *calendarRpcCaller) CatchableListCalendars(handler CalendarListHandlerFunc) auth.ClientHandlerFunc {
+func (rpc *CalendarRpcCaller) CatchableListCalendars(handler CalendarListHandlerFunc) auth.ClientHandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request, clientInfo *clientProto.ClientInfo) {
 		listRequest := makeListCalendarRequest(r, clientInfo)
 		cc := *rpc.calendarClient

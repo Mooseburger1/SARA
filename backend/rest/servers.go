@@ -4,8 +4,12 @@ import (
 	utils "backend/utils"
 	"context"
 	"log"
+	"net/http"
 	"os"
 	"time"
+
+	gohandlers "github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -15,8 +19,33 @@ func main() {
 
 	calendarServer := GetCalendarServer()
 
-	runServers(photoServer,
-		calendarServer)
+	//Serve Mux to replace the default ServeMux
+	serveMux := mux.NewRouter()
+
+	// GET SUBROUTER
+	getRouter := serveMux.Methods(http.MethodGet).Subrouter()
+
+	photoServer.RegisterGetRoutes(getRouter)
+
+	calendarServer.RegisterGetRoutes(getRouter)
+
+	// CORS Handler
+	corsHandler := gohandlers.CORS(gohandlers.AllowedOrigins([]string{"http://localhost:4200"}))
+
+	server := &http.Server{
+		Addr:         ":9090",
+		Handler:      corsHandler(serveMux),
+		IdleTimeout:  120 * time.Second,
+		ReadTimeout:  1 * time.Second,
+		WriteTimeout: 1 * time.Second,
+	}
+
+	go func() {
+		err := server.ListenAndServe()
+		if err != nil {
+			panic(err)
+		}
+	}()
 
 	sigChan := utils.GetOsKillerListener()
 
@@ -24,25 +53,8 @@ func main() {
 
 	logger.Println("Received terminate, graceful shutdown", sig)
 
-	shutdownServers(photoServer, calendarServer)
-
-}
-
-func runServers(servers ...SaraInterface) {
-	for _, server := range servers {
-		go server.StartServer()
-	}
-}
-
-func shutdownServers(servers ...SaraInterface) {
 	tc, _ := context.WithTimeout(context.Background(), 30*time.Second)
 
-	for _, server := range servers {
-		server.ShutdownServer(tc)
-	}
-}
+	server.Shutdown(tc)
 
-type SaraInterface interface {
-	StartServer()
-	ShutdownServer(context.Context)
 }
