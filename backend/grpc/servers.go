@@ -1,22 +1,19 @@
 package main
 
 import (
-	utils "backend/utils"
-	"context"
+	"backend/utils"
 	"log"
 	"os"
-	"time"
 )
 
 func main() {
-	logger := log.New(os.Stdout, "server-manager", log.LstdFlags)
+	logger := log.New(os.Stdout, "grpc-server-manager", log.LstdFlags)
 
-	photoServer := GetPhotoServer()
+	photoGrpcServer := NewPhotosGRPCServer()
 
-	calendarServer := GetCalendarServer()
+	calendarGrpcServer := NewCalendarGRPCServer()
 
-	runServers(photoServer,
-		calendarServer)
+	runServers(photoGrpcServer, calendarGrpcServer)
 
 	sigChan := utils.GetOsKillerListener()
 
@@ -24,8 +21,7 @@ func main() {
 
 	logger.Println("Received terminate, graceful shutdown", sig)
 
-	shutdownServers(photoServer, calendarServer)
-
+	shutdownServers(photoGrpcServer, calendarGrpcServer)
 }
 
 func runServers(servers ...SaraInterface) {
@@ -35,14 +31,12 @@ func runServers(servers ...SaraInterface) {
 }
 
 func shutdownServers(servers ...SaraInterface) {
-	tc, _ := context.WithTimeout(context.Background(), 30*time.Second)
-
 	for _, server := range servers {
-		server.ShutdownServer(tc)
+		server.ShutdownServer()
 	}
 }
 
 type SaraInterface interface {
 	StartServer()
-	ShutdownServer(context.Context)
+	ShutdownServer()
 }

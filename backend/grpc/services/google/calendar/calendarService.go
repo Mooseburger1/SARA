@@ -6,14 +6,14 @@ import (
 	"log"
 )
 
-type GcalendarServer struct {
+type GcalendarStub struct {
 	logger *log.Logger
 }
 
-func NewGcalendarServer(logger *log.Logger) *GcalendarServer {
-	return &GcalendarServer{logger: logger}
+func NewGcalendarStub(logger *log.Logger) *GcalendarStub {
+	return &GcalendarStub{logger: logger}
 }
 
-func (g *GcalendarServer) ListCalendarList(ctx context.Context, rpc *calendar.CalendarListRequest) (*calendar.CalendarListResponse, error) {
+func (g *GcalendarStub) ListCalendarList(ctx context.Context, rpc *calendar.CalendarListRequest) (*calendar.CalendarListResponse, error) {
 	return listCalendarList(rpc, g.logger)
 }
