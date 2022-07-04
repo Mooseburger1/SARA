@@ -17,7 +17,7 @@ type calendarRpcCaller struct {
 	calendarClient *calendarProto.GoogleCalendarServiceClient
 }
 
-type CalendarListHandlerFunc func(http.ResponseWriter, *http.Request, *calendarProto.CalendarList)
+type CalendarListHandlerFunc func(http.ResponseWriter, *http.Request, *calendarProto.CalendarListResponse)
 
 func NewCalendarRpcCaller(logger *log.Logger, cc *calendarProto.GoogleCalendarServiceClient) *calendarRpcCaller {
 	return &calendarRpcCaller{

@@ -1,10 +1,10 @@
 package main
 
 import (
-	config "backend/configuration"
-	protos "backend/grpc/proto/api/photos"
-	photoshandlers "backend/rest/handlers/google/photos"
+	protos "backend/grpc/proto/api/calendar"
+	calendarhandlers "backend/rest/handlers/google/calendar"
 	gAuth "backend/rest/middleware/google/auth/OAuth"
+	callingCatchables "backend/rest/middleware/google/callingCatchables/calendar"
 	"context"
 	"log"
 	"net/http"
@@ -15,7 +15,6 @@ import (
 	"github.com/gorilla/mux"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"gopkg.in/boj/redistore.v1"
 )
 
 type CalendarServer struct {
@@ -33,26 +32,21 @@ func (cs *CalendarServer) initCalendarServer() {
 
 	cs.logger = log.New(os.Stdout, "rest-server-calendar", log.LstdFlags)
 
-	config := config.NewGOAuthConfig()
+	// config := config.NewGOAuthConfig()
 
-	store, err := redistore.NewRediStore(10, "tcp", "redis-server:6379", "", []byte("secret-key"))
-
-	if err != nil {
-		cs.logger.Fatalf("Error processing redistore %v", err)
-		return
-	}
+	// store := common.GetDefaultRedisInstance()
 
 	/////// Initialize GRPC connections
 	calendarConn, err := grpc.Dial("grpc_backend:9093", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		panic(err)
 	}
-	defer calendarConn.Close()
-	gcsc := protos.NewGooglePhotoServiceClient(calendarConn)
+	// defer calendarConn.Close()
+	gcsc := protos.NewGoogleCalendarServiceClient(calendarConn)
 
 	/////// Initialize middleware and handlers here ///////
-	cHandler := photoshandlers.NewPhotoHandler(cs.logger)
-	gAuthMware := gAuth.NewAuthMiddleware(cs.logger, store, config)
+	cHandler := calendarhandlers.NewCalendarHandler(cs.logger)
+	gAuthMware := gAuth.GetAuthMiddleware()
 	gCalendar := callingCatchables.NewCalendarRpcCaller(cs.logger, &gcsc)
 
 	corsHandler := gohandlers.CORS(gohandlers.AllowedOrigins([]string{"http://localhost:4200"}))
@@ -62,8 +56,11 @@ func (cs *CalendarServer) initCalendarServer() {
 	// GET SUBROUTER
 	getRouter := serveMux.Methods(http.MethodGet).Subrouter()
 
+	// route for tesing if this server is up and running
+	getRouter.HandleFunc("/test", test)
+
 	// route for listing calendars
-	getRouter.HandleFunc("/calendar/listCalendars", test)
+	getRouter.HandleFunc("/calendar/listCalendars", gAuthMware.IsAuthorized(gCalendar.CatchableListCalendars(cHandler.ListCalendars)))
 
 	server :=
 		&http.Server{

@@ -13,7 +13,7 @@ func main() {
 
 	calendarGrpcServer := NewCalendarGRPCServer()
 
-	runServers(photoGrpcServer, calendarGrpcServer)
+	runServers(logger, photoGrpcServer, calendarGrpcServer)
 
 	sigChan := utils.GetOsKillerListener()
 
@@ -21,17 +21,19 @@ func main() {
 
 	logger.Println("Received terminate, graceful shutdown", sig)
 
-	shutdownServers(photoGrpcServer, calendarGrpcServer)
+	shutdownServers(logger, photoGrpcServer, calendarGrpcServer)
 }
 
-func runServers(servers ...SaraInterface) {
-	for _, server := range servers {
+func runServers(logger *log.Logger, servers ...SaraInterface) {
+	for i, server := range servers {
+		logger.Printf("Starting Server %d", i)
 		go server.StartServer()
 	}
 }
 
-func shutdownServers(servers ...SaraInterface) {
-	for _, server := range servers {
+func shutdownServers(logger *log.Logger, servers ...SaraInterface) {
+	for i, server := range servers {
+		logger.Printf("Shutting down server %d", i)
 		server.ShutdownServer()
 	}
 }

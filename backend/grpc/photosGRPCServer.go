@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 type photosGRPCServer struct {
@@ -32,12 +33,13 @@ func (ps *photosGRPCServer) initServer() {
 }
 
 func (ps *photosGRPCServer) StartServer() {
+	reflection.Register(ps.Server)
 	l, err := net.Listen("tcp", ":9091")
 	if err != nil {
 		ps.Logger.Fatal(err)
 		os.Exit(1)
 	}
-
+	ps.Logger.Printf("Photos grpc listening on 9091")
 	ps.Server.Serve(l)
 }
 

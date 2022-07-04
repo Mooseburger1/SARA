@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"text/template"
 
 	"log"
@@ -42,17 +41,6 @@ func (gc *PhotoHandler) ListPhotosFromAlbum(rw http.ResponseWriter, r *http.Requ
 		gc.logger.Printf("Unable to marshal: %v", err)
 	}
 	rw.Write(JSON)
-}
-
-// str2Int32 is a package private helper function
-// for type conversion
-func str2Int32(val string) (int32, error) {
-	i, err := strconv.Atoi(val)
-	if err != nil {
-		return 0, err
-	}
-
-	return int32(i), nil
 }
 
 // OhNo is the default Redirect handler for when a user has done something stupid

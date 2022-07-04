@@ -16,6 +16,7 @@ require (
 	cloud.google.com/go/compute v1.6.1 // indirect
 	github.com/felixge/httpsnoop v1.0.2 // indirect
 	github.com/garyburd/redigo v1.6.3 // indirect
+	github.com/google/uuid v1.3.0
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/sessions v1.2.1 // indirect
 	golang.org/x/sys v0.0.0-20220503163025-988cb79eb6c6 // indirect

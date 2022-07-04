@@ -31,11 +31,24 @@ func listCalendarList(rpc *calendar.CalendarListRequest, logger *log.Logger) (*c
 	}
 
 	query := req.URL.Query()
-	query.Add("pageToken", rpc.GetPageToken())
-	query.Add("maxResults", strconv.Itoa(int(rpc.GetMaxResults())))
-	query.Add("showDeleted", strconv.FormatBool(rpc.GetShowDeleted()))
-	query.Add("showHidden", strconv.FormatBool(rpc.GetShowHidden()))
-	query.Add("syncToken", rpc.GetSyncToken())
+	if rpc.PageToken != "" {
+		query.Add("pageToken", rpc.GetPageToken())
+	}
+	if rpc.MaxResults != 0 {
+		query.Add("maxResults", strconv.Itoa(int(rpc.GetMaxResults())))
+	}
+	if rpc.ShowDeleted != false {
+		query.Add("showDeleted", strconv.FormatBool(rpc.GetShowDeleted()))
+	}
+	if rpc.ShowHidden != false {
+		query.Add("showHidden", strconv.FormatBool(rpc.GetShowHidden()))
+	}
+	if rpc.SyncToken != "" {
+		query.Add("syncToken", rpc.GetSyncToken())
+	}
+
+	logger.Printf("query: %v", query.Encode())
+
 	req.URL.RawQuery = query.Encode()
 
 	req.Header.Set("Accept", "application/json")

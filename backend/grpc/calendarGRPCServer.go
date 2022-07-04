@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 type calendarGRPCServer struct {
@@ -34,11 +35,13 @@ func (cs *calendarGRPCServer) initServer() {
 }
 
 func (cs *calendarGRPCServer) StartServer() {
+	reflection.Register(cs.Server)
 	l, err := net.Listen("tcp", ":9093")
 	if err != nil {
 		cs.Logger.Fatal(err)
 		os.Exit(1)
 	}
+	cs.Logger.Print("Calendar grpc listening on 9093")
 	cs.Server.Serve(l)
 }
 

@@ -10,6 +10,7 @@ services:
     container_name: 'rest_backend'
     depends_on:
       - redis-server
+      - grpc-backend
     stdin_open: true
     tty: true
     ports:
