@@ -23,8 +23,8 @@ func NewPhotoHandler(logger *log.Logger) *PhotoHandler {
 	}
 }
 
-// ListAlbums makes RPC call to the photos RPC server. More specifically
-// it invokes the ListAlbums endpoint of ther RPC server.
+// ListAlbums marshals the response from the gRPC server for the ListAlbums Endpoint and writes response back
+// to client caller
 func (gc *PhotoHandler) ListAlbums(rw http.ResponseWriter, r *http.Request, ai *photosProto.AlbumsInfo) {
 
 	JSON, err := json.Marshal(ai)
@@ -34,6 +34,8 @@ func (gc *PhotoHandler) ListAlbums(rw http.ResponseWriter, r *http.Request, ai *
 	rw.Write(JSON)
 }
 
+// ListPhotosFromAlbum marshals the response from the gRPC server for the ListPhotosFromAlbum Endpoint and writes response back
+// to client caller
 func (gc *PhotoHandler) ListPhotosFromAlbum(rw http.ResponseWriter, r *http.Request, pi *photosProto.PhotosInfo) {
 
 	JSON, err := json.Marshal(pi)

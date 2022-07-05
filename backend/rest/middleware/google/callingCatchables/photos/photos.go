@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// photosRpcCaller is the client responsible for making calls
+// PhotosRpcCaller is the client responsible for making calls
 // to the gRPC server for the Google Photos endpoints. Successful
 // calls will be propogated to the injected handlers. Failed RPC
 // calls will be caught and handled gracefully.
@@ -75,7 +75,7 @@ func (rpc *PhotosRpcCaller) CatchablePhotosFromAlbum(handler PhotosInfoHandlerFu
 }
 
 // makeAlbumListRequest is a package private helper function
-// utilized to extract variables from the API URL and generate
+// utilized to extract query variables from the API URL and generate
 // an AlbumListRequest proto. More specifically, it is a parser
 // for the REST endpoint of list-albums and constructs the necessary
 // RPC proto.

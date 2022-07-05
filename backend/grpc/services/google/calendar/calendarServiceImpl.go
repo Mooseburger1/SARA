@@ -16,6 +16,10 @@ const (
 	GET                         = "GET"
 )
 
+// listCalendarList is a package private funciton utilized to make
+// an http request to the google Calendar API server, specifically the endpoint
+// which returns a list of all calendars for authorized calling client. The
+// response is unmarshaled and converted into an CalendarListResponse protobuf
 func listCalendarList(rpc *calendar.CalendarListRequest, logger *log.Logger) (*calendar.CalendarListResponse, error) {
 	client, err := utils.CreateClient(rpc.GetClientInfo())
 
@@ -74,12 +78,17 @@ func listCalendarList(rpc *calendar.CalendarListRequest, logger *log.Logger) (*c
 	return listCalendarResponsePogo2Proto(&result), nil
 }
 
+// calendarListResponseDecoder takes in the response body from the API request made to the
+// server and unmarshals it into a POGO (plain old golang object). This is needed to be done so
+// the response can be easily converted to a response protobuf and returned to the caller
 func calendarListResponseDecoder(body io.ReadCloser) POGO.CalendarListResponse {
 	var result POGO.CalendarListResponse
 	json.NewDecoder(body).Decode(&result)
 	return result
 }
 
+// listCalendarResponsePogo2Proto converts a golang struct containing the data of a ListCalendarResponse
+// and converts it to an actual instance of a ListCalendarResponse protobuf
 func listCalendarResponsePogo2Proto(result *POGO.CalendarListResponse) *calendar.CalendarListResponse {
 
 	var items []*calendar.CalendarList

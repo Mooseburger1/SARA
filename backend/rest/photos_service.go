@@ -14,7 +14,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-type PhotoServer struct {
+type PhotoService struct {
 	logger     *log.Logger
 	gpsc       protos.GooglePhotoServiceClient
 	pHandler   *photoshandlers.PhotoHandler
@@ -22,13 +22,12 @@ type PhotoServer struct {
 	gPhotos    *callingCatchables.PhotosRpcCaller
 }
 
-func GetPhotoServer() *PhotoServer {
-	ps := PhotoServer{}
-	ps.initService()
+func GetPhotoService() *PhotoService {
+	ps := PhotoService{}
 	return &ps
 }
 
-func (ps *PhotoServer) initService() {
+func (ps *PhotoService) InitServiceAndReturnCloseConnectionFunc() func() {
 	// Main logger
 	ps.logger = log.New(os.Stdout, "rest-server-photos", log.LstdFlags)
 
@@ -45,9 +44,10 @@ func (ps *PhotoServer) initService() {
 	ps.gAuthMware = gAuth.GetAuthMiddleware()
 	ps.gPhotos = callingCatchables.NewPhotosRpcCaller(ps.logger, &ps.gpsc)
 
+	return func() { photoConn.Close() }
 }
 
-func (ps *PhotoServer) RegisterGetRoutes(getRouter *mux.Router) {
+func (ps *PhotoService) RegisterGetRoutes(getRouter *mux.Router) {
 
 	//getRouter.HandleFunc("/", )
 	getRouter.HandleFunc("/authenticate", ps.gAuthMware.Authenticate)

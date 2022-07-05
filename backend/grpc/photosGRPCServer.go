@@ -16,6 +16,8 @@ type photosGRPCServer struct {
 	Logger *log.Logger
 }
 
+// NewPhotosGRPCServer creates a new instance of a photosGRPCServer.
+// It intializes it first and returns to caller, ready to be started.
 func NewPhotosGRPCServer() *photosGRPCServer {
 	ps := photosGRPCServer{}
 	ps.initServer()
@@ -26,12 +28,14 @@ func (ps *photosGRPCServer) initServer() {
 	logger := log.New(os.Stdout, "photos-rpc-server", log.LstdFlags)
 	ps.Logger = logger
 	grpcServer := grpc.NewServer()
-	photoServer := photos.NewGphotoServer(logger)
+	photoServer := photos.NewGphotoStub(logger)
 
 	protoPhotos.RegisterGooglePhotoServiceServer(grpcServer, photoServer)
 	ps.Server = grpcServer
 }
 
+// StartServer will start the intialized photosGRPCServer. It listens
+// on port :9091
 func (ps *photosGRPCServer) StartServer() {
 	reflection.Register(ps.Server)
 	l, err := net.Listen("tcp", ":9091")

@@ -14,7 +14,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-type CalendarServer struct {
+type CalendarService struct {
 	logger     *log.Logger
 	gcsc       protos.GoogleCalendarServiceClient
 	cHandler   *calendarhandlers.CalendarHandler
@@ -22,13 +22,18 @@ type CalendarServer struct {
 	gCalendar  *callingCatchables.CalendarRpcCaller
 }
 
-func GetCalendarServer() *CalendarServer {
-	cs := CalendarServer{}
-	cs.initService()
+func GetCalendarService() *CalendarService {
+	cs := CalendarService{}
 	return &cs
 }
 
-func (cs *CalendarServer) initService() {
+//InitServiceAndReturnCloseConnectionFunc intializes the service. As a part of the
+// initialization, it establishes a connection with the proper gRPC server. This
+// connection needs to have a way to be closed at application termination. In order
+// to defer those close, this function returns a function which encapsulates the closing
+// of this conneciton. You should defer the returned function in your main function in order
+// to keep the connection alive until the program is done.
+func (cs *CalendarService) InitServiceAndReturnCloseConnectionFunc() func() {
 
 	cs.logger = log.New(os.Stdout, "rest-server-calendar", log.LstdFlags)
 
@@ -45,14 +50,15 @@ func (cs *CalendarServer) initService() {
 	cs.gAuthMware = gAuth.GetAuthMiddleware()
 	cs.gCalendar = callingCatchables.NewCalendarRpcCaller(cs.logger, &cs.gcsc)
 
+	return func() { calendarConn.Close() }
 }
 
-func (cs *CalendarServer) RegisterGetRoutes(getRouter *mux.Router) {
+func (cs *CalendarService) RegisterGetRoutes(getRouter *mux.Router) {
 
 	// route for tesing if this server is up and running
 	getRouter.HandleFunc("/test", test)
 
-	// route for listing calendars
+	// route for listing calendars - optional params {pageToken | maxResults | showDeleted | showHidden | syncToken}
 	getRouter.HandleFunc("/calendar/listCalendars", cs.gAuthMware.IsAuthorized(cs.gCalendar.CatchableListCalendars(cs.cHandler.ListCalendars)))
 
 }
