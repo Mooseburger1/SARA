@@ -16,6 +16,8 @@ type calendarGRPCServer struct {
 	Logger *log.Logger
 }
 
+// NewCalendarGRPCServer creates a new instance of a calendarGRPCServer.
+// It intializes it first and returns to caller, ready to be started.
 func NewCalendarGRPCServer() *calendarGRPCServer {
 	cs := calendarGRPCServer{}
 	cs.initServer()
@@ -34,6 +36,8 @@ func (cs *calendarGRPCServer) initServer() {
 	cs.Server = grpcServer
 }
 
+// StartServer will start the intialized calendarGRPCServer. It listens
+// on port :9093
 func (cs *calendarGRPCServer) StartServer() {
 	reflection.Register(cs.Server)
 	l, err := net.Listen("tcp", ":9093")

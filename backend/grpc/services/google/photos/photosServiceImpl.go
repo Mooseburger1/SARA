@@ -20,14 +20,6 @@ const (
 	POST            = "POST"
 )
 
-type PhotosAPICallError struct {
-	Response *http.Response
-}
-
-func (pe *PhotosAPICallError) Error() string {
-	return "Did Not Get HTTP Status 200 OK"
-}
-
 // listPhotosFromAlbum is a package private funciton utilized to make
 // an http request to the google photos API server, specifically the endpoint
 // which returns all photos for a specified album. The response is unmarshaled

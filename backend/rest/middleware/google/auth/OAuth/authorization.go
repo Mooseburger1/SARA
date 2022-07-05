@@ -78,9 +78,19 @@ func ConfigBuilder(internalConfig *backendConfig.GOAuthConfig) *oauth2.Config {
 	return conf
 }
 
+// IsAuthorized checks the cookie associated with current client call. If that session has a valid
+// OAuth token, the caller is already OAuth verified and the request is propagated forward to the
+// ClientHandlerFunc. Otherwise, the ClientHandlerFunc is cached, and the request is propageted through the OAuth flow.
+// Upon successful completion of the OAuth flow, the cached ClientHandlerFunc will be inoked on Google OAuth redirect.
 func (mw *AuthMiddleware) IsAuthorized(clientHandler ClientHandlerFunc) http.HandlerFunc {
+
+	// clear any cached ClientHandlerFunc
 	mw.clearRedirectHandler()
+
+	// return new http.Handlerfunc
 	return func(rw http.ResponseWriter, r *http.Request) {
+
+		// Check redis cache for stored session from request cookie
 		session, err := mw.store.Get(r, SESSION_KEY)
 		if err != nil {
 			mw.logger.Fatalf("Error retrieveing session cookie: %v", err)
@@ -88,15 +98,21 @@ func (mw *AuthMiddleware) IsAuthorized(clientHandler ClientHandlerFunc) http.Han
 
 		accessToken := session.Values[ACCESS_TOKEN_KEY]
 
+		// Cache the ClientHandlerFunc and the current requests
+		// response writer & request
 		mw.redirectHandler = &clientHandler
 		mw.responseWriter = &rw
 		mw.request = r
 
+		// If there's no Token, redirect user through OAuth flow
 		if accessToken == nil {
+
+			mw.logger.Print("CALLING AUTHENTICATE!!!!!!!!!!")
 			mw.Authenticate(rw, r)
 			return
 		}
 
+		// Parse Client Info and pass request onto ClientHandlerFunc
 		ts, _ := time.Parse(time.RFC3339Nano, session.Values[EXPIRY_KEY].(string))
 		protoTime := timestamppb.New(ts)
 
@@ -110,6 +126,8 @@ func (mw *AuthMiddleware) IsAuthorized(clientHandler ClientHandlerFunc) http.Han
 	}
 }
 
+// clientInfoBuilder takes in all the stored params of the authorized caller and
+// constructs a ClientInfo proto needed to be propagated along to the ClientHandlerFunc
 func clientInfoBuilder(accessToken string, refreshToken string, tokenType string,
 	expiry *timestamppb.Timestamp, authMW *AuthMiddleware) clientProto.ClientInfo {
 	tokenInfo := clientProto.TokenInfo{
@@ -136,15 +154,7 @@ func clientInfoBuilder(accessToken string, refreshToken string, tokenType string
 
 }
 
-// Authenticate routes user through Google's Oauth workflow. If the user has already
-// Authenticated and Authorized the app, they will be redirected
-// TODO IMPORVE THIS WORKFLOW - CHECKING FOR A SESSION IS NOT ENOUGH
-// googleClient can get reinitialized with no authorizedClient but the
-// redis DB can save the stored session causing of state of conflict. This should
-// check for the presence of both an access token and the valid expiry time of the
-// the token. Maybe experiment with rebuilding the authorizedClient with the persisted
-// code. But I fear this code is no longer valid after expiry time. This should be fine though
-// if expiry time has run out, need to redo the whole Oauth process.
+// Authenticate constructs the URL to route the caller through Google's Oauth workflow.
 func (mw *AuthMiddleware) Authenticate(rw http.ResponseWriter, r *http.Request) {
 
 	url := mw.oauthconfig.AuthCodeURL("state", oauth2.AccessTypeOffline)
@@ -163,7 +173,8 @@ func (mw *AuthMiddleware) Authenticate(rw http.ResponseWriter, r *http.Request) 
 
 // RedirectCallback is the URL registered with Google API dashboard as the callback
 // Handler after a user has performed OAuth. It will save all tokens from the OAuth
-// Process within the session cookie and return to user for future use
+// Process within the session cookie and then used the cached ClientHandlerFunc,
+// responseWriter and request to continue the original call of the calling client.
 func (mw *AuthMiddleware) RedirectCallback(rw http.ResponseWriter, r *http.Request) {
 
 	// Extract google code
