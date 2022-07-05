@@ -127,6 +127,37 @@ type PhotosInfo struct {
 	Filename   string `json:"filename"`
 }
 
+// Equals checks for and asserts equality of one AlbumsInfoPOGO
+// with another AlbumsInfoPOGO
+func (pi *PhotosInfoPOGO) Equals(PIP PhotosInfoPOGO) bool {
+	for idx, pip := range pi.MediaItems {
+		comp := PIP.MediaItems[idx]
+
+		if !pip.Equals(comp) {
+			return false
+		}
+	}
+	return true
+}
+
+// Equals checks for and asserts equality of one AlbumsInfo
+// with another AlbumsInfo
+func (pi *PhotosInfo) Equals(info PhotosInfo) bool {
+	if pi.Id != info.Id {
+		return false
+	} else if pi.ProductUrl != info.ProductUrl {
+		return false
+	} else if pi.BaseUrl != info.BaseUrl {
+		return false
+	} else if pi.MimeType != info.MimeType {
+		return false
+	} else if pi.Filename != info.Filename {
+		return false
+	} else {
+		return true
+	}
+}
+
 type CalendarListResponse struct {
 	NextPageToken string         `json:"nextPageToken"`
 	NextSyncToken string         `json:"nextSyncToken"`
