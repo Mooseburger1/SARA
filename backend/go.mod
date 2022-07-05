@@ -14,6 +14,7 @@ require (
 
 require (
 	cloud.google.com/go/compute v1.6.1 // indirect
+	github.com/VividCortex/protobuf v0.0.0-20201215174216-4f44cc960989 // indirect
 	github.com/felixge/httpsnoop v1.0.2 // indirect
 	github.com/garyburd/redigo v1.6.3 // indirect
 	github.com/google/uuid v1.3.0
