@@ -24,3 +24,12 @@ func NewGcalendarStub(logger *log.Logger) *GcalendarStub {
 func (g *GcalendarStub) ListCalendarList(ctx context.Context, rpc *calendar.CalendarListRequest) (*calendar.CalendarListResponse, error) {
 	return listCalendarList(rpc, g.logger)
 }
+
+// ListCalendarList is a RPC service endpoint. It receives an CalendarListRequest
+// proto and returns an CalendarListResponse proto. Internally it makes an Oauth2
+// authorized REST request to the Google Calendar API server for listing calendars.
+func (g *GcalendarStub) ListCalendarGet(ctx context.Context, rpc *calendar.ListCalendarGetRequest) (*calendar.ListCalendarGetResponse, error) {
+	return listCalendarGet(rpc, g.logger)
+}
+
+/// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

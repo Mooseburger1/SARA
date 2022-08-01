@@ -6,6 +6,16 @@ option go_package = "backend/grpc/proto/api/calendar";
 
 service GoogleCalendarService {
     rpc ListCalendarList(CalendarListRequest) returns (CalendarListResponse);
+    rpc ListCalendarGet(ListCalendarGetRequest) returns (ListCalendarGetResponse);
+}
+
+message ListCalendarGetRequest {
+    ClientInfo client_info = 1;
+    string calendar_id = 2;
+}
+
+message ListCalendarGetResponse {
+    CalendarList calendar = 1;
 }
 
 message CalendarListRequest {

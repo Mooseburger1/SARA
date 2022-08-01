@@ -22,7 +22,18 @@ func NewCalendarHandler(logger *log.Logger) *CalendarHandler {
 
 // ListCalendars marshals the response from the gRPC server for the ListCalendars Endpoint and writes response back
 // to client caller
-func (ch *CalendarHandler) ListCalendars(rw http.ResponseWriter, r *http.Request, cl *calendarProto.CalendarListResponse) {
+func (ch *CalendarHandler) ListCalendarsList(rw http.ResponseWriter, r *http.Request, cl *calendarProto.CalendarListResponse) {
+	JSON, err := json.Marshal(cl)
+	if err != nil {
+		ch.logger.Printf("Unable to marshal: %v", err)
+	}
+
+	rw.Write(JSON)
+}
+
+// GetCalendarsList marshals the response from the gRPC server for the ListCalendars Endpoint and writes response back
+// to client caller
+func (ch *CalendarHandler) GetCalendarsList(rw http.ResponseWriter, r *http.Request, cl *calendarProto.ListCalendarGetResponse) {
 	JSON, err := json.Marshal(cl)
 	if err != nil {
 		ch.logger.Printf("Unable to marshal: %v", err)

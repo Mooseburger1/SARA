@@ -59,8 +59,10 @@ func (cs *CalendarService) RegisterGetRoutes(getRouter *mux.Router) {
 	getRouter.HandleFunc("/test", test)
 
 	// route for listing calendars - optional params {pageToken | maxResults | showDeleted | showHidden | syncToken}
-	getRouter.HandleFunc("/calendar/listCalendars", cs.gAuthMware.IsAuthorized(cs.gCalendar.CatchableListCalendars(cs.cHandler.ListCalendars)))
+	getRouter.HandleFunc("/calendar/listCalendarsList", cs.gAuthMware.IsAuthorized(cs.gCalendar.CatchableListCalendarsList(cs.cHandler.ListCalendarsList)))
 
+	// route for getting a calendar
+	getRouter.HandleFunc("/calendar/getCalendarsList/{calendarId:[-_0-9A-Za-z]+}", cs.gAuthMware.IsAuthorized(cs.gCalendar.CatchableGetCalendarsList(cs.cHandler.GetCalendarsList)))
 }
 
 func test(rw http.ResponseWriter, r *http.Request) {

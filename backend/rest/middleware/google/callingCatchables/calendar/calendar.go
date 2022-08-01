@@ -37,9 +37,9 @@ func NewCalendarRpcCaller(logger *log.Logger, cc *calendarProto.GoogleCalendarSe
 // CatchableListCalendars makes a request to the RPC server for the ListCalendars endpoint. A successful
 // request is propagated forward to the supplied CalendarListHandlerFunc. All errors will be caught and
 // the error will be returned to the client caller
-func (rpc *CalendarRpcCaller) CatchableListCalendars(handler CalendarListHandlerFunc) auth.ClientHandlerFunc {
+func (rpc *CalendarRpcCaller) CatchableListCalendarsList(handler CalendarListHandlerFunc) auth.ClientHandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request, clientInfo *clientProto.ClientInfo) {
-		listRequest := makeListCalendarRequest(r, clientInfo)
+		listRequest := makeListCalendarsListRequest(r, clientInfo)
 		cc := *rpc.calendarClient
 		list, err := cc.ListCalendarList(context.Background(), listRequest)
 
@@ -52,12 +52,42 @@ func (rpc *CalendarRpcCaller) CatchableListCalendars(handler CalendarListHandler
 	}
 }
 
+// CatchableListCalendars makes a request to the RPC server for the ListCalendars endpoint. A successful
+// request is propagated forward to the supplied CalendarListHandlerFunc. All errors will be caught and
+// the error will be returned to the client caller
+func (rpc *CalendarRpcCaller) CatchableGetCalendarsList(handler CalendarListHandlerFunc) auth.ClientHandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request, clientInfo *clientProto.ClientInfo) {
+		getRequest := makeListCalendarsGetRequest(r, clientInfo)
+		cc := *rpc.calendarClient
+		calendar, err := cc.ListCalendarGet(context.Background(), getRequest)
+
+		if err != nil {
+			st := status.Convert(err)
+			utils.Route404Error(st, rw)
+			return
+		}
+		handler(rw, r, calendar)
+	}
+}
+
+func makeListCalendarsGetRequest(r *http.Request, ci *clientProto.ClientInfo) *calendarProto.ListCalendarGetRequest {
+	calendarId := r.URL.Query().Get("calendarId")
+	var req calendarProto.ListCalendarGetRequest
+	req.ClientInfo = ci
+
+	if calendarId != "" {
+		req.CalendarId = calendarId
+	}
+
+	return &req
+}
+
 // makeListCalendarRequest is a package private helper function
 // utilized to extract query variables from the API URL and generate
 // an CalendarListRequst proto. More specifically, it is a parser
 // for the REST endpoint of list-calendars and constructs the necessary
 // RPC proto.
-func makeListCalendarRequest(r *http.Request, ci *clientProto.ClientInfo) *calendarProto.CalendarListRequest {
+func makeListCalendarsListRequest(r *http.Request, ci *clientProto.ClientInfo) *calendarProto.CalendarListRequest {
 	pageToken := r.URL.Query().Get("pageToken")
 	maxResults := r.URL.Query().Get("maxResults")
 	showDeleted := r.URL.Query().Get("showDeleted")

@@ -13,6 +13,7 @@ import (
 
 const (
 	LIST_CALENDAR_LIST_ENDPOINT = "https://www.googleapis.com/calendar/v3/users/me/calendarList"
+	LIST_CALENDAR_GET_ENDPOINT = "https://www.googleapis.com/calendar/v3/users/me/calendarList/calendarId"
 	GET                         = "GET"
 )
 
